@@ -84,12 +84,19 @@ export default function Hero() {
                     Get Started
                   </MotionButton>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  {
-                    dropDownItems.map((item,index)=> <DropdownMenuItem asChild  key={index}>
-                    <Link href={item.href} >{item.name}</Link>
-                  </DropdownMenuItem>)
-                  }
+                <DropdownMenuContent align="start" className="w-48 p-2">
+                  {dropDownItems.map((item, index) => (
+                    <DropdownMenuItem
+                      asChild
+                      key={index}
+                      className="mt-1 border px-3 py-2 rounded transition-colors data-[highlighted]:bg-purple-600 data-[highlighted]:text-white"
+                    >
+                      <Link href={item.href} className="w-full h-full block">
+                        {item.name}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+
                 </DropdownMenuContent>
               </DropdownMenu>
             </motion.div>
@@ -124,7 +131,7 @@ export default function Hero() {
               />
             </motion.div>
 
-           
+
           </motion.div>
         </div>
       </div>
