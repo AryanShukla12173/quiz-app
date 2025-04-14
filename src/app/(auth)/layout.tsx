@@ -20,10 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en"  className={geist.className}>
-      <body className="">
-        {children}
-      </body>
-    </html>
+   <div>
+    {children}
+   </div>
   );
 }

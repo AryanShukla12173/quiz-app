@@ -15,11 +15,11 @@ const MotionButton = motion(Button)
 const dropDownItems = [
   {
     name: "Sign In",
-    href: "#"
+    href: "/sign-in"
   },
   {
     name: "Sign Up",
-    href: "#"
+    href: "/sign-up"
   },
 
 ]

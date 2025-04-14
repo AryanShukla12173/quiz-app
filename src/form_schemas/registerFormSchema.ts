@@ -27,3 +27,4 @@ const registerFormSchema = z.object({
         .min(2, { message: "College name must be at least 2 characters" }),
 });
 export default registerFormSchema
+export type RegisterFormValues = z.infer<typeof registerFormSchema>;
