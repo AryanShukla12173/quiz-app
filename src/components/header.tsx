@@ -24,8 +24,10 @@ export default function Header() {
   // ]
   
   const drawerItems = [
-    { name: "Sign In", href: "/sign-in", variant: "primary" },
-    { name: "Sign Up", href: "/sign-up", variant: "outline" }
+    { name: " Admin Sign In", href: "/sign-in", variant: "primary" },
+    { name: "Admin Sign Up", href: "/sign-up", variant: "outline" },
+    { name : "Code Platform Sign In", href: "/coding-platform/sign-in", variant: "outline" },
+    { name: "Code Platform Sign Up", href: "/coding-platform/sign-up", variant: "outline" },
   ]
 
   return (

@@ -3,7 +3,6 @@ import React, { useState } from 'react'
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from 'zod'
-import registerFormSchema from '@/form_schemas/registerFormSchema'
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -17,58 +16,52 @@ import { Input } from "@/components/ui/input"
 import {
   Mail,
   Lock,
-  MapPin,
-  Landmark,
-  School,
   AlertCircle
 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { UserRole } from '@/form_schemas/registerFormSchema'
+import ccoding_plat_registerFormSchema from '@/form_schemas/coding_plat_registerFormSchema'
 import { useAuth } from '@/context/AuthContext'
+
 function SignUp() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
   
   // Use the auth context
-  const { signUp, error, clearError } = useAuth()
+  const { signUp, error, clearError } = useAuth();
 
-  const form = useForm<z.infer<typeof registerFormSchema>>({
-    resolver: zodResolver(registerFormSchema),
+  const form = useForm<z.infer<typeof ccoding_plat_registerFormSchema>>({
+    resolver: zodResolver(ccoding_plat_registerFormSchema),
     defaultValues: {
       email: "",
       password: "",
-      pincode: "",
-      collegename: "",
-      state: "",
-      role: UserRole.quiz_app_admin
+      role: UserRole.quiz_app_user
     },
-  })
+  });
 
-  async function onSubmit(formData: z.infer<typeof registerFormSchema>) {
+  async function onSubmit(formData: z.infer<typeof ccoding_plat_registerFormSchema>) {
+    // Clear any previous errors
+    clearError();
+    setLoading(true);
+    
     try {
-      clearError() // Clear any previous errors
-      setLoading(true)
-      
       // Use the signUp method from auth context
-      // Note: While AuthContext's signUp expects a displayName, we're using collegename as a substitute
-      await signUp(formData.email, formData.password, formData.collegename)
+      // Note: the signUp function in AuthContext accepts displayName, 
+      // but the form schema doesn't include it, so we're passing an empty string
+      await signUp(formData.email, formData.password, "");
       
-      // After successful signup, update additional user profile info
-      // Note: The basic user creation and role are handled by AuthContext,
-      // but we need to separately handle the additional fields not covered by AuthContext
-      
-      // Delay the redirect slightly to allow for data fetching on the dashboard
+      // If successful, redirect to start page
+      // (We don't need to check for user existence as AuthContext handles this)
       setTimeout(() => {
-        router.push('/dashboard')
-      }, 500) // Half a second delay
-      
-    } catch (error: any) {
-      console.error(error)
+        router.push('/coding-platform/start');
+      }, 500);
+    } catch (error) {
       // Error handling is already done in the AuthContext
+      console.error("Sign up error:", error);
     } finally {
-      setLoading(false) // Ensure loading is always set to false after the operation
+      setLoading(false);
     }
   }
 
@@ -150,78 +143,11 @@ function SignUp() {
                       </FormItem>
                     )}
                   />
-                  {/* Two columns for state and pincode */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* State field */}
-                    <FormField
-                      control={form.control}
-                      name="state"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700 text-base">State</FormLabel>
-                          <FormControl>
-                            <div className="flex items-center rounded-lg border border-gray-200 px-4 py-3">
-                              <MapPin className="w-5 h-5 text-purple-500 mr-3" />
-                              <Input
-                                placeholder="Karnataka"
-                                {...field}
-                                className="flex-1 border-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-base"
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* PIN Code field */}
-                    <FormField
-                      control={form.control}
-                      name="pincode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700 text-base">PIN Code</FormLabel>
-                          <FormControl>
-                            <div className="flex items-center rounded-lg border border-gray-200 px-4 py-3">
-                              <Landmark className="w-5 h-5 text-purple-500 mr-3" />
-                              <Input
-                                placeholder="560001"
-                                {...field}
-                                className="flex-1 border-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-base"
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/* College Name field - full width */}
-                  <FormField
-                    control={form.control}
-                    name="collegename"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700 text-base">College</FormLabel>
-                        <FormControl>
-                          <div className="flex items-center rounded-lg border border-gray-200 px-4 py-3">
-                            <School className="w-5 h-5 text-purple-500 mr-3" />
-                            <Input
-                              placeholder="Your College"
-                              {...field}
-                              className="flex-1 border-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-base"
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                
                 </div>
 
                 <div className="text-purple-600 hover:text-purple-800 cursor-pointer text-sm pt-2">
-                  <Link href="/sign-in">Already registered? Sign in here</Link>
+                  <Link href="/coding-platform/sign-in">Already registered? Sign in here</Link>
                 </div>
 
                 <Button

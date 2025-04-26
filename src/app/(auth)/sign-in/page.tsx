@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react'
+import React from 'react'
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from 'zod'
@@ -20,14 +20,13 @@ import {
   AlertCircle
 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { redirect, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getAuth, signInWithEmailAndPassword } from '@firebase/auth'
-import {app} from "@/lib/connectDatabase"
+import { useAuth } from '@/context/AuthContext'// Import the auth context hook
+
 function SignIn() {
   const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const { signIn, error, loading, clearError } = useAuth() // Use the auth context
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -36,21 +35,14 @@ function SignIn() {
       password: "",
     },
   });
-  const auth = getAuth(app)
+
   async function onSubmit(formData: z.infer<typeof loginSchema>) {
-    try {
-      setError(null)
-      setLoading(true)
-      const res = await signInWithEmailAndPassword(auth,formData.email,formData.password)
-      if(res.user){
-        router.push('/dashboard')
-      }
-      setLoading(false)
-    } catch (error: any) {
-      setLoading(false)
-      console.error(error)
-      setError(error.message || "Failed to login. Please check your credentials.")
-    }
+    clearError() // Clear any previous errors
+    await signIn(formData.email, formData.password)
+    
+    // No need to manually redirect - the protected route will handle this
+    // You can add a redirect here if you want to force navigation after sign-in
+    router.push('/dashboard')
   }
 
   return (
@@ -131,10 +123,10 @@ function SignIn() {
 
                 <div className="flex justify-between items-center text-sm pt-2">
                   <div className="text-purple-600 hover:text-purple-800 cursor-pointer">
-                    <Link href = "#">Forgot Password? </Link>
+                    <Link href="/forgot-password">Forgot Password?</Link>
                   </div>
                   <div className="text-purple-600 hover:text-purple-800 cursor-pointer">
-                    <Link href = "/sign-up" >New user? Register Here</Link>
+                    <Link href="/sign-up">New user? Register Here</Link>
                   </div>
                 </div>
 

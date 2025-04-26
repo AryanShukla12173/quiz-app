@@ -18,9 +18,8 @@ const iconMap: Record<string, JSX.Element> = {
 };
 
 const dashboardActions = [
-  { label: 'Home', href: '/dashboard' },
-  { label: 'Challenge Creation', href: '/dashboard/challenges' },
   { label: 'Profile', href: '/dashboard/profile' },
+  { label: 'Challenge Creation', href: '/dashboard/challenges' },
   { label: 'Code Test History', href: '/dashboard/history' },
 ];
 
@@ -34,7 +33,7 @@ export default function DashboardSidebar() {
     try {
       await signOut(auth);
       // Optionally, redirect the user after logging out
-      router.push('/login'); // replace with your desired URL
+      router.push('/'); // replace with your desired URL
     } catch (error) {
       console.error(error);
     }

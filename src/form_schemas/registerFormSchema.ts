@@ -1,5 +1,9 @@
 import { z } from 'zod'
-
+export enum UserRole {
+    quiz_app_user = 'quiz-app-user',
+    quiz_app_admin = 'quiz-app-admin'
+  }
+  
 const registerFormSchema = z.object({
 
     email: z
@@ -25,6 +29,7 @@ const registerFormSchema = z.object({
     collegename: z
         .string()
         .min(2, { message: "College name must be at least 2 characters" }),
+    role: z.nativeEnum(UserRole)
 });
 export default registerFormSchema
 export type RegisterFormValues = z.infer<typeof registerFormSchema>;
