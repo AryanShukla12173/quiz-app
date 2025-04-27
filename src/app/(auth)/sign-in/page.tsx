@@ -22,7 +22,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useAuth } from '@/context/AuthContext'// Import the auth context hook
+import { useAuth, UserRole } from '@/context/AuthContext'// Import the auth context hook
 
 function SignIn() {
   const router = useRouter()
@@ -38,7 +38,7 @@ function SignIn() {
 
   async function onSubmit(formData: z.infer<typeof loginSchema>) {
     clearError() // Clear any previous errors
-    await signIn(formData.email, formData.password)
+    await signIn(formData.email, formData.password, UserRole.quiz_app_admin)
     
     // No need to manually redirect - the protected route will handle this
     // You can add a redirect here if you want to force navigation after sign-in

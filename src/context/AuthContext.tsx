@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useEffect, useState , useTransition } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { 
   getAuth, 
   onAuthStateChanged, 
@@ -13,7 +13,7 @@ import {
 import { doc, getDoc, getFirestore, setDoc } from 'firebase/firestore';
 import { app } from '@/lib/connectDatabase';
 import { useRouter } from 'next/navigation';
-import LoadingScreen from '@/components/LoadingScreen'; // import it at top
+import LoadingScreen from '@/components/LoadingScreen';
 
 // Define user roles
 export enum UserRole {
@@ -29,11 +29,11 @@ type AuthContextType = {
   error: string | null;
   
   // Auth methods
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  signIn: (email: string, password: string, expectedRole?: UserRole) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string, formData?: Record<string, any>) => Promise<void>;
   logOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  updateUserProfile: (displayName: string) => Promise<void>;
+  updateUserProfile: (displayName: string, profileData?: Record<string, any>) => Promise<void>;
   clearError: () => void;
 };
 
@@ -70,6 +70,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -106,7 +107,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         } else {
           setRole(null);
         }
-        setLoading(false); // ✅ Move this inside async after role is fetched
+        setLoading(false);
       };
   
       fetchAndSetRole();
@@ -115,13 +116,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => unsubscribe();
   }, [auth, db]);
   
-  // Sign in with email and password
-  const signIn = async (email: string, password: string) => {
+  // Sign in with email and password - with optional role validation
+  const signIn = async (email: string, password: string, expectedRole?: UserRole) => {
     setLoading(true);
     setError(null);
     
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      // First authenticate the user
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // If role validation is requested, check the user's role
+      if (expectedRole) {
+        const userRole = await fetchUserRole(userCredential.user.uid);
+        
+        // If user doesn't have the expected role, sign them out and show error
+        if (userRole !== expectedRole) {
+          await signOut(auth);
+          setError(`Access denied. Your account doesn't have the required permissions for this area.`);
+          setLoading(false);
+          return;
+        }
+      }
+      
       // Auth state listener will handle setting the user and role
     } catch (error: any) {
       console.error('Sign in error:', error);
@@ -143,8 +159,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Sign up with email, password, and display name
-  const signUp = async (email: string, password: string, displayName: string) => {
+  // Sign up with email, password, display name, and arbitrary form data
+  const signUp = async (email: string, password: string, displayName: string, formData: Record<string, any> = {}) => {
     setLoading(true);
     setError(null);
     
@@ -154,14 +170,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Set display name
       await updateProfile(userCredential.user, { displayName });
       
-      // Create user profile in Firestore with default role
+      // Create user profile in Firestore with default role and additional form data
       const userProfileRef = doc(db, 'user-profiles', userCredential.user.uid);
-      await setDoc(userProfileRef, {
+      
+      // Create the profile object with all the form data
+      const profileData = {
         email,
         displayName,
         role: UserRole.quiz_app_user, // Default role
-        createdAt: new Date().toISOString()
-      });
+        createdAt: new Date().toISOString(),
+        // Add any additional form data
+        ...formData
+      };
+      
+      await setDoc(userProfileRef, profileData);
+      
+      // For debugging
+      console.log('User profile created with data:', profileData);
       
       // Auth state listener will handle setting the user and role
     } catch (error: any) {
@@ -218,8 +243,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Update user profile function
-  const updateUserProfile = async (displayName: string) => {
+  // Update user profile function - now with additional profile data support
+  const updateUserProfile = async (displayName: string, profileData: Record<string, any> = {}) => {
     setError(null);
     
     if (!user) {
@@ -232,7 +257,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // Update the user profile in Firestore
       const userProfileRef = doc(db, 'user-profiles', user.uid);
-      await setDoc(userProfileRef, { displayName }, { merge: true });
+      await setDoc(userProfileRef, { 
+        displayName,
+        ...profileData 
+      }, { merge: true });
       
       // Force refresh of user object
       setUser({ ...user });
@@ -282,36 +310,67 @@ export const ProtectedRoute = ({
   allowedRoles?: UserRole[];
   redirectPath?: string;
 }) => {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, logOut } = useAuth();
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
+  const [unauthorized, setUnauthorized] = useState(false);
 
   useEffect(() => {
     if (loading) return; // Wait for auth to finish loading
 
-    if (!user) {
-      router.replace(redirectPath);  // ❌ No user, redirect to login
-    } else if (role && !allowedRoles.includes(role)) {
-      // ❌ Wrong role, redirect
-      if (role === UserRole.quiz_app_user) {
-        router.replace('/dashboard');
-      } else if (role === UserRole.quiz_app_admin) {
-        router.replace('/coding-platform/start');
+    const checkAccess = async () => {
+      if (!user) {
+        // No user, redirect to login
+        router.replace(redirectPath);
+      } else if (role && !allowedRoles.includes(role)) {
+        // Wrong role, handle unauthorized access
+        setUnauthorized(true);
+        
+        // Log them out and redirect after a delay
+        setTimeout(async () => {
+          await logOut();
+          
+          // Redirect based on role
+          if (role === UserRole.quiz_app_user) {
+            router.replace('/dashboard');
+          } else if (role === UserRole.quiz_app_admin) {
+            router.replace('/coding-platform/start');
+          } else {
+            router.replace('/unauthorized');
+          }
+        }, 3000); // 3 seconds delay to show the unauthorized message
       } else {
-        router.replace('/unauthorized');
+        // Correct user & role
+        setIsChecking(false);
       }
-    } else {
-      // ✅ Correct user & role
-      setIsChecking(false);
-    }
-  }, [user, role, loading, allowedRoles, redirectPath, router]);
+    };
 
-  if (loading || isChecking) {
-    return <LoadingScreen message={loading ? 'Loading...' : 'Redirecting...'} />;
+    checkAccess();
+  }, [user, role, loading, allowedRoles, redirectPath, router, logOut]);
+
+  if (loading || (isChecking && !unauthorized)) {
+    return <LoadingScreen message={loading ? 'Loading...' : 'Checking access...'} />;
+  }
+
+  if (unauthorized) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-4">
+        <div className="bg-red-900/30 border border-red-500 rounded-lg p-8 max-w-md text-center">
+          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+          <p className="mb-4">
+            Your account doesn't have the required permissions to access this area.
+          </p>
+          <p className="text-sm text-gray-300">
+            You'll be redirected to the appropriate area in a moment...
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
 };
+
 // AdminRoute - Specialized route for admin access only
 export const AdminRoute = ({ children, redirectPath = '/sign-in' }: Omit<ProtectedRouteProps, 'allowedRoles'>) => {
   return (

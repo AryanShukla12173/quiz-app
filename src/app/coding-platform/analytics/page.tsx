@@ -151,7 +151,6 @@ export default function UserSubmissionsTable() {
 
       const userIds = Object.keys(bestEntries);
 
-      // Batch fetch user profiles
       const userDocsPromises = userIds.map(userId =>
         getDoc(doc(db, 'users', userId)).then(docSnap => ({ userId, docSnap }))
       );
@@ -173,7 +172,6 @@ export default function UserSubmissionsTable() {
           userNames[userId] = userId.slice(0, 6);
         }
       });
-
 
       const leaderboardArray: LeaderboardEntry[] = userIds.map(userId => ({
         userId,
@@ -213,101 +211,116 @@ export default function UserSubmissionsTable() {
   }
 
   if (!user) {
-    return <div className="p-4 text-center">Please sign in to view your submissions.</div>;
+    return <div className="p-4 text-center text-white">Please sign in to view your submissions.</div>;
   }
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6 text-center">📚 Your Test Submissions</h2>
-
-      {submissions.length === 0 ? (
-        <p className="text-center text-gray-500">You haven't submitted any tests yet.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm border rounded-md overflow-hidden">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                <th className="px-4 py-3 text-left">Test Title</th>
-                <th className="px-4 py-3 text-left">Description</th>
-                <th className="px-2 py-3 text-center">Duration</th>
-                <th className="px-2 py-3 text-center">Score</th>
-                <th className="px-2 py-3 text-center">Challenges</th>
-                <th className="px-2 py-3 text-center">Submitted</th>
-                <th className="px-2 py-3 text-center">Leaderboard</th>
-              </tr>
-            </thead>
-            <tbody>
-              {submissions.map((submission, index) => (
-                <tr key={submission.id} className="border-t hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-2 font-medium">{submission.testTitle}</td>
-                  <td className="px-4 py-2 truncate max-w-[200px]">{submission.testDescription}</td>
-                  <td className="px-2 py-2 text-center">{submission.testDuration} min</td>
-                  <td className="px-2 py-2 text-center">
-                    {submission.earnedPoints} / {submission.totalPoints}
-                  </td>
-                  <td className="px-2 py-2 text-center">
-                    {submission.noOfChallengesAttempted} / {submission.challenges.length}
-                  </td>
-                  <td className="px-2 py-2 text-center">{formatDate(submission.createdAt)}</td>
-                  <td className="px-2 py-2 text-center">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => loadLeaderboard(submission)}
-                          disabled={leaderboardLoading}
-                        >
-                          {leaderboardLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'View'}
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-md">
-                        <DialogTitle className="text-lg font-bold text-center mb-4">
-                          🏆 Leaderboard
-                        </DialogTitle>
-
-                        {leaderboard === null ? (
-                          <div className="flex justify-center py-6">
-                            <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
-                          </div>
-                        ) : leaderboard.length === 0 ? (
-                          <div className="text-center py-6 text-gray-500">
-                            No leaderboard data available.
-                          </div>
+    <div className="p-6 bg-gray-900 min-h-screen font-sans text-gray-100">
+    <h2 className="text-3xl font-semibold mb-8 text-center text-white">
+      📚 Your Test Submissions
+    </h2>
+  
+    {submissions.length === 0 ? (
+      <p className="text-center text-gray-400">You haven't submitted any tests yet.</p>
+    ) : (
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm bg-gray-800 border border-gray-700 rounded-md shadow-md">
+          <thead className="bg-gray-700 text-gray-300">
+            <tr>
+              <th className="px-4 py-3 text-left">Test Title</th>
+              <th className="px-4 py-3 text-left">Description</th>
+              <th className="px-2 py-3 text-center">Duration</th>
+              <th className="px-2 py-3 text-center">Score</th>
+              <th className="px-2 py-3 text-center">Challenges</th>
+              <th className="px-2 py-3 text-center">Submitted</th>
+              <th className="px-2 py-3 text-center">Leaderboard</th>
+            </tr>
+          </thead>
+          <tbody>
+            {submissions.map((submission) => (
+              <tr key={submission.id} className="border-t border-gray-700 hover:bg-gray-700 transition-colors">
+                <td className="px-4 py-3 font-medium text-white">{submission.testTitle}</td>
+                <td className="px-4 py-3 truncate max-w-[250px] text-gray-300">{submission.testDescription}</td>
+                <td className="px-2 py-3 text-center text-gray-300">{submission.testDuration} min</td>
+                <td className="px-2 py-3 text-center text-green-400 font-semibold">
+                  {submission.earnedPoints} / {submission.totalPoints}
+                </td>
+                <td className="px-2 py-3 text-center text-gray-300">
+                  {submission.noOfChallengesAttempted} / {submission.challenges.length}
+                </td>
+                <td className="px-2 py-3 text-center text-gray-400">
+                  {formatDate(submission.createdAt)}
+                </td>
+                <td className="px-2 py-3 text-center">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-gray-700 text-gray-300 hover:bg-gray-600"
+                        onClick={() => loadLeaderboard(submission)}
+                        disabled={leaderboardLoading}
+                      >
+                        {leaderboardLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <table className="w-full text-xs border">
-                            <thead className="bg-gray-50">
-                              <tr>
-                                <th className="px-2 py-2">Rank</th>
-                                <th className="px-2 py-2">User</th>
-                                <th className="px-2 py-2">Score</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {leaderboard.map(entry => (
-                                <tr
-                                  key={entry.userId}
-                                  className={entry.userId === user.uid ? 'bg-blue-100 font-bold' : ''}
-                                >
-                                  <td className="px-2 py-2 text-center">{entry.rank}</td>
-                                  <td className="px-2 py-2">{entry.name}</td>
-                                  <td className="px-2 py-2 text-center">
-                                    {entry.earnedPoints} / {entry.totalPoints}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                          'View'
                         )}
-                      </DialogContent>
-                    </Dialog>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md bg-gray-800 rounded-xl border border-gray-700 shadow-lg">
+                      <DialogTitle className="text-lg font-semibold text-center mb-4 text-white">
+                        🏆 Leaderboard
+                      </DialogTitle>
+  
+                      {leaderboard === null ? (
+                        <div className="flex justify-center py-6">
+                          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                        </div>
+                      ) : leaderboard.length === 0 ? (
+                        <div className="text-center py-6 text-gray-400">
+                          No leaderboard data available.
+                        </div>
+                      ) : (
+                        <table className="w-full text-xs border border-gray-700 rounded-md overflow-hidden">
+                          <thead className="bg-gray-700 text-gray-300">
+                            <tr>
+                              <th className="px-2 py-2">Rank</th>
+                              <th className="px-2 py-2">User</th>
+                              <th className="px-2 py-2">Score</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {leaderboard.map(entry => (
+                              <tr
+                                key={entry.userId}
+                                className={
+                                  entry.userId === user.uid
+                                    ? 'bg-blue-900 font-semibold text-blue-300'
+                                    : 'hover:bg-gray-700'
+                                }
+                              >
+                                <td className="px-2 py-2 text-center">{entry.rank}</td>
+                                <td className="px-2 py-2">{entry.name}</td>
+                                <td className="px-2 py-2 text-center">
+                                  {entry.earnedPoints} / {entry.totalPoints}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </DialogContent>
+                  </Dialog>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+  
+
   );
 }

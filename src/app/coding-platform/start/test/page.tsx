@@ -3,7 +3,7 @@ import React from 'react'
 import { useEffect, useState } from 'react'
 import { app, db } from '@/lib/connectDatabase'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { doc, getDoc, addDoc, collection, Timestamp } from '@firebase/firestore'
+import { doc, getDoc, addDoc, collection, Timestamp, query, where, getDocs } from '@firebase/firestore'
 import { ChallengesDocumentData, SubmissionResult, LANGUAGES, EDITOR_OPTIONS } from '@/lib/types'
 import Editor, { useMonaco } from "@monaco-editor/react"
 import { Tabs, TabsContent, TabsList } from '@/components/ui/tabs'
@@ -30,6 +30,8 @@ function TestComponent() {
     const [runningTests, setRunningTests] = useState(false)
     const [submissionSuccessful, setSubmissionSuccessful] = useState(false)
     const [isTestAccessible, setIsTestAccessible] = useState(true)
+    const [checkingPreviousSubmission, setCheckingPreviousSubmission] = useState(true)
+    const [testProcessingProgress, setTestProcessingProgress] = useState({ current: 0, total: 0 })
 
     // Timer states
     const [testStartTime, setTestStartTime] = useState<Timestamp | null>(null)
@@ -41,31 +43,19 @@ function TestComponent() {
         { name: 'Test', id: 'test-tab' },
         { name: "Test Cases", id: 'test-cases-tab' },
     ]
-    
+
     const userId = useCurrentUserId()
-    
-    // Check if test is already submitted
-    useEffect(() => {
-        if (testId) {
-            const isSubmitted = localStorage.getItem(`test_submitted_${testId}`);
-            if (isSubmitted === 'true') {
-                setIsTestAccessible(false);
-                // Redirect to results page
-               
-            }
-        }
-    }, [testId, router]);
-    
-    // Modified to include localStorage persistence
+
+    // Modified to still include localStorage for code persistence, but not for checking submission status
     const handleCodeChange = (challengeId: string, newCode: string | undefined) => {
-        if (!challengeId || !newCode || !isTestAccessible) return;
-        
+        if (!challengeId || !newCode) return;
+
         // Update state
         setCodeByChallenge((prev) => ({
-          ...prev,
-          [challengeId]: newCode,
+            ...prev,
+            [challengeId]: newCode,
         }));
-        
+
         // Save to localStorage
         try {
             // Create a storage key that includes the test ID to separate code for different tests
@@ -75,7 +65,39 @@ function TestComponent() {
             console.error("Failed to save code to localStorage:", e);
         }
     };
-      
+
+    // Check if user has already submitted this test
+    async function checkPreviousSubmission() {
+        if (!testId || !userId) {
+            setCheckingPreviousSubmission(false);
+            return;
+        }
+
+        try {
+            const submissionsRef = collection(db, 'codeTestsubmissions');
+            const q = query(submissionsRef,
+                where('userId', '==', userId),
+                where('testId', '==', testId)
+            );
+
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                // User has already submitted this test
+                console.log("User already submitted this test, redirecting to analytics");
+                router.push('/coding-platform/analytics');
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.error("Error checking previous submissions:", error);
+            return false;
+        } finally {
+            setCheckingPreviousSubmission(false);
+        }
+    }
+
     async function fetchChallengeById() {
         try {
             if (testId) {
@@ -85,16 +107,16 @@ function TestComponent() {
                 if (challengeSnap.exists()) {
                     const challengeData = challengeSnap.data() as ChallengesDocumentData;
                     setChallengeData(challengeData);
-                    
+
                     // Initialize the timer
                     initializeTimer(challengeData.testDuration);
-                    
+
                     // Load saved code for all challenges from localStorage
                     const savedCodeByChallenge: Record<string, string> = {};
                     challengeData.challenges.forEach((challenge, index) => {
                         const challengeId = `challenge_${index}`;
                         const storageKey = `code_${testId}_${challengeId}`;
-                        
+
                         try {
                             const savedCode = localStorage.getItem(storageKey);
                             if (savedCode) {
@@ -104,13 +126,13 @@ function TestComponent() {
                             console.error("Failed to load code from localStorage:", e);
                         }
                     });
-                    
+
                     setCodeByChallenge(savedCodeByChallenge);
-                    
+
                     // Set initial selected challenge
                     setSelectedChallenge(0);
                     setSelectedChallengeId(`challenge_0`);
-                    
+
                     setLoading(false);
                 } else {
                     console.log("No such document!")
@@ -125,21 +147,12 @@ function TestComponent() {
         }
     }
 
-    // Initialize timer function
+    // Initialize timer function - modified to remove localStorage check for test submission
     const initializeTimer = (durationInMinutes: number) => {
-        // Check if test is already submitted
-        if (testId) {
-            const isSubmitted = localStorage.getItem(`test_submitted_${testId}`);
-            if (isSubmitted === 'true') {
-                setIsTestAccessible(false);
-                return;
-            }
-        }
-        
         // Check if we have a stored start time
         const storedStartTime = localStorage.getItem(`test_start_${testId}`);
         let startTime: Timestamp;
-        
+
         if (storedStartTime) {
             // Use stored start time
             startTime = Timestamp.fromMillis(parseInt(storedStartTime));
@@ -148,15 +161,15 @@ function TestComponent() {
             startTime = Timestamp.now();
             localStorage.setItem(`test_start_${testId}`, startTime.toMillis().toString());
         }
-        
+
         setTestStartTime(startTime);
-        
+
         // Calculate remaining time in seconds
         const endTimeMillis = startTime.toMillis() + (durationInMinutes * 60 * 1000);
         const currentTimeMillis = new Date().getTime();
         const remainingMillis = Math.max(0, endTimeMillis - currentTimeMillis);
         setRemainingTime(Math.floor(remainingMillis / 1000));
-        
+
         // If time is already up, auto-submit
         if (remainingMillis <= 0) {
             setTimeIsUp(true);
@@ -166,8 +179,8 @@ function TestComponent() {
 
     // Timer update effect
     useEffect(() => {
-        if (remainingTime === null || timeIsUp || !isTestAccessible) return;
-        
+        if (remainingTime === null || timeIsUp) return;
+
         const timer = setInterval(() => {
             setRemainingTime(prev => {
                 if (prev === null) return null;
@@ -180,23 +193,28 @@ function TestComponent() {
                 return prev - 1;
             });
         }, 1000);
-        
+
         return () => clearInterval(timer);
-    }, [remainingTime, timeIsUp, isTestAccessible]);
+    }, [remainingTime, timeIsUp]);
 
     useEffect(() => {
-        if (isTestAccessible) {
-            fetchChallengeById();
-        }
-    }, [testId, isTestAccessible])
+        const init = async () => {
+            // First check if user already submitted this test
+            const hasSubmitted = await checkPreviousSubmission();
+            if (!hasSubmitted) {
+                // If not, proceed with fetching challenge data
+                await fetchChallengeById();
+            }
+        };
+
+        init();
+    }, [testId, userId]);
 
     const handleChallengeSelect = (index: number) => {
-        if (!isTestAccessible) return;
-        
         setSelectedChallenge(index);
         const challengeId = `challenge_${index}`;
         setSelectedChallengeId(challengeId);
-        
+
         // Load saved code from localStorage if it exists
         if (testId) {
             const storageKey = `code_${testId}_${challengeId}`;
@@ -215,27 +233,23 @@ function TestComponent() {
     };
 
     const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        if (!isTestAccessible) return;
-        
         const selectedLang = LANGUAGES.find(lang => lang.value === e.target.value)
         if (selectedLang) {
             setSelectedLanguage(selectedLang)
         }
     }
-    
+
     async function handleRunTest() {
-        if (!isTestAccessible) return;
-        
         try {
             const resultData = await executeCode(codeByChallenge[selectedChallengeId || ""] || "", selectedLanguage.value, input)
             console.log("Execution result:", resultData)
-            if (resultData.exitCode === 0) {    
+            if (resultData.exitCode === 0) {
                 setOutput(resultData.output)
             }
             else {
                 setOutput(resultData.error)
             }
-            return 
+            return
         } catch (error) {
             console.error("Error running test:", error)
             setError("An error occurred while running the test")
@@ -243,26 +257,32 @@ function TestComponent() {
         }
     }
 
+    // Helper function to add delay between API calls
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
     async function handleRunAllTests() {
-        if (!selectedChallengeId || !challengeData || !isTestAccessible) return;
-        
+        if (!selectedChallengeId || !challengeData) return;
+
         setRunningTests(true);
         setError(null);
-        
+
         const challengeIndex = selectedChallenge !== null ? selectedChallenge : 0;
         const code = codeByChallenge[selectedChallengeId] || "";
         const testcases = challengeData?.challenges[challengeIndex].testcases || [];
-        
+
         const newResults: Record<number, { passed: boolean, output: string, error: string }> = {};
-        
+
         for (let i = 0; i < testcases.length; i++) {
             const testcase = testcases[i];
             try {
+                // Add a delay between API calls to prevent rate limiting
+                if (i > 0) await delay(1000);
+
                 const result = await executeCode(code, selectedLanguage.value, testcase.input);
-                
+
                 // Check if output matches expected (trim whitespace for better comparison)
                 const passed = result.output.trim() === testcase.expectedOutput.trim();
-                
+
                 newResults[i] = {
                     passed,
                     output: result.output,
@@ -277,98 +297,147 @@ function TestComponent() {
                 };
             }
         }
-        
+
         // Update test results for this challenge
         setTestResults(prev => ({
             ...prev,
             [selectedChallengeId]: newResults
         }));
-        
+
         setRunningTests(false);
     }
-    
+
     const allTestsPassed = (challengeId: string): boolean => {
         if (!testResults[challengeId]) return false;
-        
+
         return Object.values(testResults[challengeId]).every(result => result.passed);
     };
-    
+
     const getChallengeProgress = (): { completed: number, total: number } => {
         if (!challengeData) return { completed: 0, total: 0 };
-        
+
         const total = challengeData.challenges.length;
         let completed = 0;
-        
+
         challengeData.challenges.forEach((_, index) => {
             const challengeId = `challenge_${index}`;
             if (allTestsPassed(challengeId)) {
                 completed++;
             }
         });
-        
+
         return { completed, total };
     };
-    
+
     const calculateEarnedPoints = (): number => {
         if (!challengeData) return 0;
-        
+
         let earnedPoints = 0;
-        
+
         challengeData.challenges.forEach((challenge, index) => {
             const challengeId = `challenge_${index}`;
             if (allTestsPassed(challengeId)) {
                 earnedPoints += challenge.score;
             }
         });
-        
+
         return earnedPoints;
     };
-    
+
     const calculateTotalPoints = (): number => {
         if (!challengeData) return 0;
-        
+
         return challengeData.challenges.reduce((total, challenge) => total + challenge.score, 0);
     };
 
     const countAttemptedChallenges = (): number => {
         if (!challengeData) return 0;
-        
+
         return Object.keys(codeByChallenge).length;
     };
-    
+
+    // Modified to run tests with rate limiting before final submission
     async function handleSubmitAllSolutions() {
         if (!challengeData || !testId || !testStartTime) {
             setError("Missing challenge data, test ID, or start time");
             return;
         }
-        
-        // Prevent multiple submissions
-        if (!isTestAccessible) return;
-        
+
         try {
             setLoading(true);
-            
-            // First make sure all tests are run
-            for (let i = 0; i < challengeData.challenges.length; i++) {
+            setRunningTests(true);
+
+            // First make sure all tests are run with rate limiting
+            const totalChallenges = challengeData.challenges.length;
+            setTestProcessingProgress({ current: 0, total: totalChallenges });
+
+            // Process each challenge that has code
+            for (let i = 0; i < totalChallenges; i++) {
                 const challengeId = `challenge_${i}`;
-                if (!testResults[challengeId] && codeByChallenge[challengeId]) {
-                    // If we haven't run tests for this challenge yet but have code, select it and run its tests
+                setTestProcessingProgress(prev => ({ ...prev, current: i }));
+
+                if (codeByChallenge[challengeId]) {
+                    // Select the challenge
                     setSelectedChallenge(i);
                     setSelectedChallengeId(challengeId);
-                    await handleRunAllTests();
+
+                    // Run tests for this challenge with rate limiting
+                    const code = codeByChallenge[challengeId];
+                    const challenge = challengeData.challenges[i];
+                    const testcases = challenge.testcases;
+
+                    const challengeResults: Record<number, { passed: boolean, output: string, error: string }> = {};
+
+                    for (let j = 0; j < testcases.length; j++) {
+                        const testcase = testcases[j];
+
+                        try {
+                            // Add delay between API calls to respect rate limits
+                            if (i > 0 || j > 0) {
+                                await delay(1000); // 1 second delay between API calls
+                            }
+
+                            const result = await executeCode(code, selectedLanguage.value, testcase.input);
+
+                            // Check if output matches expected
+                            const passed = result.output.trim() === testcase.expectedOutput.trim();
+
+                            challengeResults[j] = {
+                                passed,
+                                output: result.output,
+                                error: result.error
+                            };
+                        } catch (error) {
+                            console.error(`Error running test case ${j} for challenge ${i}:`, error);
+                            challengeResults[j] = {
+                                passed: false,
+                                output: "",
+                                error: error instanceof Error ? error.message : "Unknown error"
+                            };
+                        }
+                    }
+
+                    // Update test results for this challenge
+                    setTestResults(prev => ({
+                        ...prev,
+                        [challengeId]: challengeResults
+                    }));
                 }
             }
-            
+
+            setRunningTests(false);
+
+            // Now proceed with submission
             const earnedPoints = calculateEarnedPoints();
             const totalPoints = calculateTotalPoints();
             const noOfChallengesAttempted = countAttemptedChallenges();
-            
+
             // Create submission result document that matches the SubmissionResult type
             const submissionResult: SubmissionResult = {
                 userId: userId || "",
                 createdAt: Timestamp.now(),
                 earnedPoints,
-                totalPoints, 
+                totalPoints,
                 testId,
                 testTitle: challengeData.testTitle,
                 testDescription: challengeData.testDescription,
@@ -380,7 +449,7 @@ function TestComponent() {
                     const challengeId = `challenge_${index}`;
                     const challengeResults = testResults[challengeId] || {};
                     const attempted = !!codeByChallenge[challengeId];
-                    
+
                     return {
                         title: challenge.title,
                         description: challenge.description,
@@ -397,30 +466,27 @@ function TestComponent() {
                     };
                 })
             };
-            
+
             // Add the submission to Firestore
             const submissionRef = await addDoc(collection(db, 'codeTestsubmissions'), submissionResult);
             console.log("Submission created with ID:", submissionRef.id);
-            
-            // Mark the test as submitted in localStorage
-            localStorage.setItem(`test_submitted_${testId}`, 'true');
-            
+
             // Clear localStorage test start time
             localStorage.removeItem(`test_start_${testId}`);
-            
+
             // Set submission result in state
             setResultData(submissionResult);
             setSubmissionSuccessful(true);
-            setIsTestAccessible(false);
             setLoading(false);
-            
+
             // Redirect to results page
             router.push(`/coding-platform/analytics`);
-            
+
         } catch (error) {
             console.error("Error submitting solutions:", error);
             setError("An error occurred while submitting your solutions");
             setLoading(false);
+            setRunningTests(false);
         }
     }
 
@@ -432,35 +498,23 @@ function TestComponent() {
         return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     };
 
-    // If test is not accessible, show lock screen
-    if (!isTestAccessible) {
+    const currentChallenge = selectedChallenge !== null && challengeData?.challenges
+        ? challengeData.challenges[selectedChallenge]
+        : null;
+
+    const { completed, total } = getChallengeProgress();
+
+    // Show loading indicator while checking previous submission
+    if (checkingPreviousSubmission) {
         return (
             <div className="w-screen h-screen flex items-center justify-center bg-gray-100">
-                <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md">
-                    <Lock className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                    <h1 className="text-2xl font-bold mb-2">Test Locked</h1>
-                    <p className="text-gray-600 mb-4">
-                        This test has been submitted and is no longer accessible.
-                    </p>
-                    <p className="text-gray-500 mb-6">
-                        You are being redirected to the results page...
-                    </p>
-                    <button
-                        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
-                        onClick={() => router.push(`/coding-platform/analytics`)}
-                    >
-                        Go to Results
-                    </button>
+                <div className="text-center p-8 bg-white rounded shadow-md">
+                    <Clock className="h-12 w-12 mx-auto mb-4 animate-spin text-blue-600" />
+                    <p className="text-lg font-medium">Checking previous submissions...</p>
                 </div>
             </div>
         );
     }
-
-    const currentChallenge = selectedChallenge !== null && challengeData?.challenges 
-        ? challengeData.challenges[selectedChallenge] 
-        : null;
-
-    const { completed, total } = getChallengeProgress();
 
     return (
         <div className='w-screen h-screen flex flex-row'>
@@ -469,7 +523,7 @@ function TestComponent() {
                     <p className="font-bold text-lg">
                         {challengeData ? challengeData.testTitle : loading ? "Loading..." : "Test Not Found"}
                     </p>
-                    
+
                     {/* Timer display */}
                     <div className={`flex items-center mt-2 mb-3 p-2 rounded ${remainingTime && remainingTime < 300 ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>
                         <AlarmClock className="h-5 w-5 mr-2" />
@@ -478,31 +532,31 @@ function TestComponent() {
                             <p className="text-xs">{timeIsUp ? 'Time is up!' : 'Remaining'}</p>
                         </div>
                     </div>
-                    
+
                     <p className="text-sm">
                         Progress: {completed}/{total} challenges completed
                     </p>
                     <div className="w-full bg-red-200 rounded-full h-2.5 mt-2">
-                        <div 
-                            className="bg-green-600 h-2.5 rounded-full" 
+                        <div
+                            className="bg-green-600 h-2.5 rounded-full"
                             style={{ width: `${total > 0 ? (completed / total) * 100 : 0}%` }}
                         ></div>
                     </div>
                 </div>
-                
+
                 <ul className="flex-grow overflow-auto">
                     {challengeData?.challenges.map((challenge, index) => {
                         const challengeId = `challenge_${index}`;
                         const isPassed = allTestsPassed(challengeId);
                         const isAttempted = !!codeByChallenge[challengeId];
-                        
+
                         return (
-                            <li 
+                            <li
                                 key={index}
                                 className={`p-2 mb-2 rounded cursor-pointer flex items-center justify-between
-                                    ${selectedChallenge === index ? 'bg-red-600 text-white' : 
-                                    isPassed ? 'bg-green-100' : 
-                                    isAttempted ? 'bg-yellow-100' : 'hover:bg-red-300'}`}
+                                    ${selectedChallenge === index ? 'bg-red-600 text-white' :
+                                        isPassed ? 'bg-green-100' :
+                                            isAttempted ? 'bg-yellow-100' : 'hover:bg-red-300'}`}
                                 onClick={() => handleChallengeSelect(index)}
                             >
                                 <span>{challenge.title}</span>
@@ -511,23 +565,32 @@ function TestComponent() {
                         );
                     })}
                 </ul>
-                
+
                 <div className="mt-4">
                     <button
                         className="w-full bg-green-600 text-white p-2 rounded mb-2 flex items-center justify-center"
                         onClick={handleSubmitAllSolutions}
                         disabled={loading || runningTests}
                     >
-                        {loading ? 'Submitting...' : 'Submit All Solutions'}
+                        {runningTests && testProcessingProgress.total > 0 ? (
+                            <>
+                                <Clock className="h-4 w-4 mr-1 animate-spin" />
+                                Processing {testProcessingProgress.current + 1}/{testProcessingProgress.total}
+                            </>
+                        ) : loading ? (
+                            'Submitting...'
+                        ) : (
+                            'Submit All Solutions'
+                        )}
                     </button>
-                    
+
                     {submissionSuccessful && (
                         <div className="bg-green-100 border border-green-400 text-green-700 p-2 rounded">
                             <p>Score: {resultData?.earnedPoints}/{resultData?.totalPoints}</p>
                             <p className="text-sm">Submission successful!</p>
                         </div>
                     )}
-                    
+
                     {error && (
                         <div className="bg-red-100 border border-red-400 text-red-700 p-2 rounded">
                             {error}
@@ -535,12 +598,12 @@ function TestComponent() {
                     )}
                 </div>
             </div>
-            
+
             <div className='w-1/4 flex-2 h-screen bg-amber-400 flex flex-col'>
                 <div className="p-3 bg-amber-500">
                     <div className="flex items-center mb-2">
                         <label htmlFor="language-select" className="mr-2 font-medium">Language:</label>
-                        <select 
+                        <select
                             id="language-select"
                             value={selectedLanguage.value}
                             onChange={handleLanguageChange}
@@ -554,7 +617,7 @@ function TestComponent() {
                         </select>
                     </div>
                 </div>
-                
+
                 <div className="flex-grow">
                     <Editor
                         value={selectedChallengeId ? (codeByChallenge[selectedChallengeId] || "") : ""}
@@ -562,14 +625,11 @@ function TestComponent() {
                         height="100%"
                         language={selectedLanguage.monacoId}
                         theme="vs-dark"
-                        options={{
-                            ...EDITOR_OPTIONS,
-                            readOnly: !isTestAccessible
-                        }}
+                        options={EDITOR_OPTIONS}
                     />
                 </div>
             </div>
-            
+
             <Tabs defaultValue="Description" className="w-2/5 h-screen bg-blue-400 overflow-auto p-5">
                 <TabsList className="w-full flex">
                     {TabItems.map((item) => (
@@ -578,7 +638,7 @@ function TestComponent() {
                         </TabsTrigger>
                     ))}
                 </TabsList>
-                
+
                 <TabsContent value="Description" className="p-4">
                     {currentChallenge ? (
                         <div>
@@ -590,36 +650,35 @@ function TestComponent() {
                         <p>Select a challenge to view details</p>
                     )}
                 </TabsContent>
-                
+
                 <TabsContent value="Test" className="p-4">
                     {currentChallenge ? (
                         <div>
                             <h2 className="text-xl font-bold mb-2">{currentChallenge.title}</h2>
                             <div className="mt-4">
                                 <h3 className="text-lg font-semibold mb-2">Test Your Code</h3>
-                                <textarea 
+                                <textarea
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     className="w-full h-24 p-2 border border-gray-300 rounded"
                                     placeholder="Enter your input here..."
-                                    disabled={!isTestAccessible}
                                 ></textarea>
                                 <div className="mt-2">
                                     <h4 className="font-semibold">Output:</h4>
                                     <pre className="bg-gray-100 p-2 rounded">{output}</pre>
                                 </div>
                                 <div className="flex space-x-2 mt-2">
-                                    <button 
+                                    <button
                                         className="bg-blue-600 text-white px-4 py-2 rounded"
                                         onClick={handleRunTest}
-                                        disabled={runningTests || !isTestAccessible}
+                                        disabled={runningTests}
                                     >
                                         Run Test
                                     </button>
-                                    <button 
+                                    <button
                                         className="bg-green-600 text-white px-4 py-2 rounded flex items-center"
                                         onClick={handleRunAllTests}
-                                        disabled={runningTests || !isTestAccessible}
+                                        disabled={runningTests}
                                     >
                                         {runningTests ? (
                                             <>
@@ -629,7 +688,7 @@ function TestComponent() {
                                         ) : 'Run All Tests'}
                                     </button>
                                 </div>
-                                
+
                                 {selectedChallengeId && testResults[selectedChallengeId] && (
                                     <div className="mt-4">
                                         <h3 className="text-lg font-semibold mb-2">Test Results</h3>
@@ -644,15 +703,14 @@ function TestComponent() {
                                                     <span>Some tests failed. Check details below.</span>
                                                 </div>
                                             )}
-                                            
+
                                             {currentChallenge.testcases.map((testcase, i) => {
                                                 const result = testResults[selectedChallengeId]?.[i];
                                                 return (
-                                                    <div 
-                                                        key={i} 
-                                                        className={`mb-2 p-2 rounded ${
-                                                            result?.passed ? 'bg-green-50' : 'bg-red-50'
-                                                        }`}
+                                                    <div
+                                                        key={i}
+                                                        className={`mb-2 p-2 rounded ${result?.passed ? 'bg-green-50' : 'bg-red-50'
+                                                            }`}
                                                     >
                                                         <div className="flex items-center">
                                                             {result?.passed ? (
@@ -683,7 +741,7 @@ function TestComponent() {
                         <p>Select a challenge to view details</p>
                     )}
                 </TabsContent>
-                
+
                 <TabsContent value="Test Cases" className="p-4">
                     {currentChallenge ? (
                         <div>

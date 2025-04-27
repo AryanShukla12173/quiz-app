@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/context/AuthContext"
+import { useAuth, UserRole } from "@/context/AuthContext"
 
 // Enhanced validation schema
 const formSchema = z.object({
@@ -59,7 +59,7 @@ export default function LoginForm() {
 
   const onSubmit = async (data: FormValues) => {
     clearError() // Clear any previous errors
-    await signIn(data.email, data.password)
+    await signIn(data.email, data.password , UserRole.quiz_app_user)
     // The auth context will handle the redirect in the ProtectedRoute component
     // But we can also force navigation here if needed
     router.push('/coding-platform/start')

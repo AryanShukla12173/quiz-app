@@ -50,7 +50,7 @@ function SignUp() {
       // Use the signUp method from auth context
       // Note: the signUp function in AuthContext accepts displayName, 
       // but the form schema doesn't include it, so we're passing an empty string
-      await signUp(formData.email, formData.password, "");
+      await signUp(formData.email, formData.password, "",formData);
       
       // If successful, redirect to start page
       // (We don't need to check for user existence as AuthContext handles this)

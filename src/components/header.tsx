@@ -1,13 +1,13 @@
 "use client"
+
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useMobile } from "@/components/hooks/use-mobile"
 import { X } from "lucide-react"
-import { DropdownMenu } from "@/components/ui/dropdown-menu"
+
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const isMobile = useMobile()
 
@@ -19,14 +19,17 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // const navItems = [
-  //    {}
-  // ]
-  
+  const navItems = [
+    { name: "Home", href: "/" },
+    { name: "About", href: "/about" },
+    { name: "Pricing", href: "/pricing" },
+    { name: "Contact", href: "/contact" },
+  ]
+
   const drawerItems = [
-    { name: " Admin Sign In", href: "/sign-in", variant: "primary" },
+    { name: "Admin Sign In", href: "/sign-in", variant: "primary" },
     { name: "Admin Sign Up", href: "/sign-up", variant: "outline" },
-    { name : "Code Platform Sign In", href: "/coding-platform/sign-in", variant: "outline" },
+    { name: "Code Platform Sign In", href: "/coding-platform/sign-in", variant: "outline" },
     { name: "Code Platform Sign Up", href: "/coding-platform/sign-up", variant: "outline" },
   ]
 
@@ -47,10 +50,20 @@ export default function Header() {
               </span>
             </Link>
           </div>
+
           <div className="flex items-center space-x-6">
-            <nav className="flex items-center space-x-6">
-              
+            <nav className="hidden md:flex items-center space-x-6">
+              {navItems.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="text-white hover:text-purple-300 transition-colors"
+                >
+                  {item.name}
+                </Link>
+              ))}
             </nav>
+
             <Button 
               className="bg-white text-purple-600 hover:bg-white/90 rounded-full"
               onClick={() => setIsDrawerOpen(true)}

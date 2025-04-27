@@ -18,7 +18,7 @@ const iconMap: Record<string, JSX.Element> = {
 };
 
 const dashboardActions = [
-  { label: 'Profile', href: '/dashboard/profile' },
+  { label: 'Profile', href: '/dashboard' },
   { label: 'Challenge Creation', href: '/dashboard/challenges' },
   { label: 'Code Test History', href: '/dashboard/history' },
 ];

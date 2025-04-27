@@ -27,10 +27,11 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { UserRole } from '@/form_schemas/registerFormSchema'
 import { useAuth } from '@/context/AuthContext'
+import { indianStates } from '@/lib/constants'
 function SignUp() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  
+
   // Use the auth context
   const { signUp, error, clearError } = useAuth()
 
@@ -50,20 +51,20 @@ function SignUp() {
     try {
       clearError() // Clear any previous errors
       setLoading(true)
-      
+
       // Use the signUp method from auth context
       // Note: While AuthContext's signUp expects a displayName, we're using collegename as a substitute
-      await signUp(formData.email, formData.password, formData.collegename)
-      
+      await signUp(formData.email, formData.password,"",formData)
+
       // After successful signup, update additional user profile info
       // Note: The basic user creation and role are handled by AuthContext,
       // but we need to separately handle the additional fields not covered by AuthContext
-      
+
       // Delay the redirect slightly to allow for data fetching on the dashboard
       setTimeout(() => {
         router.push('/dashboard')
       }, 500) // Half a second delay
-      
+
     } catch (error: any) {
       console.error(error)
       // Error handling is already done in the AuthContext
@@ -160,19 +161,27 @@ function SignUp() {
                         <FormItem>
                           <FormLabel className="text-gray-700 text-base">State</FormLabel>
                           <FormControl>
-                            <div className="flex items-center rounded-lg border border-gray-200 px-4 py-3">
+                            <div className="flex items-center rounded-lg border border-gray-200 px-4 py-3 bg-white">
                               <MapPin className="w-5 h-5 text-purple-500 mr-3" />
-                              <Input
-                                placeholder="Karnataka"
+                              <select
                                 {...field}
-                                className="flex-1 border-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-base"
-                              />
+                                className="flex-1 bg-transparent border-none outline-none text-base"
+                              >
+                                <option value="" disabled>Select your State</option>
+                                {indianStates.map((state) => (
+                                  <option key={state} value={state}>
+                                    {state}
+                                  </option>
+                                ))}
+                              </select>
                             </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
+
 
                     {/* PIN Code field */}
                     <FormField

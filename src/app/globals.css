@@ -147,3 +147,12 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+/* globals.css or inside your styles */
+/* globals.css */
+.bg-grid-pattern {
+  background-color: #0f172a; /* Dark Slate background */
+  background-image: 
+    linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, 0.05) 25%, transparent 26%, transparent 74%, rgba(255, 255, 255, 0.05) 75%, transparent 76%),
+    linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, 0.05) 25%, transparent 26%, transparent 74%, rgba(255, 255, 255, 0.05) 75%, transparent 76%);
+  background-size: 40px 40px;
+}
