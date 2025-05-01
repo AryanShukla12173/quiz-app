@@ -22,6 +22,7 @@ function UserProfile() {
       toast.success('Profile updated successfully!');
       setIsEditing(false);
     } catch (error) {
+      console.log(error)
       toast.error('Failed to update profile.');
     } finally {
       setSaving(false);

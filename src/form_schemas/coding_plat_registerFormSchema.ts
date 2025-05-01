@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UserRole } from '@/context/AuthContext';
+
 
 // Define the schema
 const coding_platform_register_form = z.object({

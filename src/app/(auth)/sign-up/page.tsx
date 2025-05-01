@@ -29,7 +29,7 @@ import Link from 'next/link'
 
 function SignUp() {
   const router = useRouter()
-  const { signUp, error, clearError, user, role, loading: authLoading } = useAuth()
+  const { signUp, error, clearError, user, loading: authLoading } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [signUpComplete, setSignUpComplete] = useState(false)
   
@@ -55,12 +55,12 @@ function SignUp() {
       setIsSubmitting(true)
       
       const { password, ...rest } = formData
-      await signUp(formData.email, formData.password, formData.fullName, rest)
+      await signUp(formData.email, password, formData.fullName, rest)
       
       console.log('signUp function completed successfully')
       // Mark sign-up as complete to trigger the redirect logic
       setSignUpComplete(true)
-    } catch (error: any) {
+    } catch (error) {
       console.error('SignUp error:', error)
       setIsSubmitting(false)
     }

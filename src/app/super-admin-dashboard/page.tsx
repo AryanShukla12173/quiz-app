@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useContext } from 'react'
+import React, { useEffect, useState } from 'react'
 import { db } from '@/lib/connectDatabase'
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { adminUserDocData } from '@/lib/types'
@@ -32,9 +32,9 @@ import { useAuth } from '@/context/AuthContext'
 function SuperAdminDashboard() {
   const [adminUserData, setAdminUserData] = useState<adminUserDocData[]>([])
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
-  const [loadingUserId, setLoadingUserId] = useState<string | null>(null)
+  const [, setLoadingUserId] = useState<string | null>(null)
   const [totalUsers, setTotalUsers] = useState(0)
-  const { user, role } = useAuth()
+  const { role } = useAuth()
 
   async function fetchAllAdminUserData() {
     try {
@@ -129,7 +129,6 @@ function SuperAdminDashboard() {
             {adminUserData.map(user => (
               <TableRow key={user.id}>
                 <TableCell>{user.email}</TableCell>
-                <TableCell>{user.state}</TableCell>
                 <TableCell>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Invalid Date"}</TableCell>
                 <TableCell>{user.role}</TableCell>
                 {role === UserRole.quiz_app_superadmin && (

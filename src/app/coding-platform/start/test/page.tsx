@@ -1,15 +1,15 @@
 "use client"
 import React from 'react'
 import { useEffect, useState } from 'react'
-import { app, db } from '@/lib/connectDatabase'
+import {  db } from '@/lib/connectDatabase'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { doc, getDoc, addDoc, collection, Timestamp, query, where, getDocs } from '@firebase/firestore'
 import { ChallengesDocumentData, SubmissionResult, LANGUAGES, EDITOR_OPTIONS } from '@/lib/types'
-import Editor, { useMonaco } from "@monaco-editor/react"
+import Editor from "@monaco-editor/react"
 import { Tabs, TabsContent, TabsList } from '@/components/ui/tabs'
 import { TabsTrigger } from '@radix-ui/react-tabs'
 import { executeCode } from '@/lib/piston-api'
-import { CheckCircle, XCircle, Clock, AlarmClock, Lock } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, AlarmClock } from 'lucide-react'
 import { useCurrentUserId } from '@/hooks/useGetCurrentUserId'
 
 function TestComponent() {
@@ -29,7 +29,6 @@ function TestComponent() {
     const [testResults, setTestResults] = useState<Record<string, Record<number, { passed: boolean, output: string, error: string }>>>({})
     const [runningTests, setRunningTests] = useState(false)
     const [submissionSuccessful, setSubmissionSuccessful] = useState(false)
-    const [isTestAccessible, setIsTestAccessible] = useState(true)
     const [checkingPreviousSubmission, setCheckingPreviousSubmission] = useState(true)
     const [testProcessingProgress, setTestProcessingProgress] = useState({ current: 0, total: 0 })
 
@@ -447,15 +446,14 @@ function TestComponent() {
                 noOfChallengesAttempted,
                 challenges: challengeData.challenges.map((challenge, index) => {
                     const challengeId = `challenge_${index}`;
-                    const challengeResults = testResults[challengeId] || {};
                     const attempted = !!codeByChallenge[challengeId];
 
                     return {
                         title: challenge.title,
                         description: challenge.description,
                         attempted,
-                        testcases: challenge.testcases.map((testcase, testIndex) => {
-                            const testResult = challengeResults[testIndex];
+                        testcases: challenge.testcases.map((testcase) => {
+                            
                             return {
                                 description: testcase.description,
                                 input: testcase.input,

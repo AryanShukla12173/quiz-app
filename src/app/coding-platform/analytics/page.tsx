@@ -57,58 +57,59 @@ export default function UserSubmissionsTable() {
   const { user, loading: authLoading } = useAuth();
   const [submissions, setSubmissions] = useState<SubmissionResultWithId[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[] | null>(null);
-  const [activeSubmission, setActiveSubmission] = useState<SubmissionResultWithId | null>(null);
+  const [, setActiveSubmission] = useState<SubmissionResultWithId | null>(null);
   const [loading, setLoading] = useState(true);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
   useEffect(() => {
     if (!user || authLoading) return;
+    const fetchUserSubmissions = async () => {
+      if (!user?.uid) return;
+  
+      try {
+        setLoading(true);
+  
+        const submissionsQuery = query(
+          collection(db, 'codeTestsubmissions'),
+          where('userId', '==', user.uid),
+          orderBy('createdAt', 'desc')
+        );
+  
+        const submissionsSnap = await getDocs(submissionsQuery);
+  
+        if (submissionsSnap.empty) {
+          setLoading(false);
+          return;
+        }
+  
+        const userSubmissions: SubmissionResultWithId[] = submissionsSnap.docs.map(docSnap => {
+          const data = docSnap.data() as SubmissionResult;
+          return { id: docSnap.id, ...data };
+        });
+  
+        const latestSubmissions: Record<string, SubmissionResultWithId> = {};
+  
+        userSubmissions.forEach(submission => {
+          const { testId } = submission;
+          if (
+            !latestSubmissions[testId] ||
+            submission.createdAt.seconds > latestSubmissions[testId].createdAt.seconds
+          ) {
+            latestSubmissions[testId] = submission;
+          }
+        });
+  
+        setSubmissions(Object.values(latestSubmissions));
+      } catch (error) {
+        console.error('Error fetching submissions:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchUserSubmissions();
   }, [user, authLoading]);
 
-  const fetchUserSubmissions = async () => {
-    if (!user?.uid) return;
 
-    try {
-      setLoading(true);
-
-      const submissionsQuery = query(
-        collection(db, 'codeTestsubmissions'),
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
-      );
-
-      const submissionsSnap = await getDocs(submissionsQuery);
-
-      if (submissionsSnap.empty) {
-        setLoading(false);
-        return;
-      }
-
-      const userSubmissions: SubmissionResultWithId[] = submissionsSnap.docs.map(docSnap => {
-        const data = docSnap.data() as SubmissionResult;
-        return { id: docSnap.id, ...data };
-      });
-
-      const latestSubmissions: Record<string, SubmissionResultWithId> = {};
-
-      userSubmissions.forEach(submission => {
-        const { testId } = submission;
-        if (
-          !latestSubmissions[testId] ||
-          submission.createdAt.seconds > latestSubmissions[testId].createdAt.seconds
-        ) {
-          latestSubmissions[testId] = submission;
-        }
-      });
-
-      setSubmissions(Object.values(latestSubmissions));
-    } catch (error) {
-      console.error('Error fetching submissions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadLeaderboard = async (submission: SubmissionResultWithId) => {
     setActiveSubmission(submission);
@@ -221,7 +222,7 @@ export default function UserSubmissionsTable() {
     </h2>
   
     {submissions.length === 0 ? (
-      <p className="text-center text-gray-400">You haven't submitted any tests yet.</p>
+      <p className="text-center text-gray-400">You haven&apos;t submitted any tests yet.</p>
     ) : (
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm bg-gray-800 border border-gray-700 rounded-md shadow-md">

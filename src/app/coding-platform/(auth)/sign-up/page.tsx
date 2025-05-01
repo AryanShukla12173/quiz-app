@@ -28,7 +28,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/context/AuthContext'
-import { UserRole } from '@/context/AuthContext'
 import coding_platform_register_form from '@/form_schemas/coding_plat_registerFormSchema'
 type FormValues = z.infer<typeof coding_platform_register_form>
 
@@ -54,7 +53,7 @@ function SignUp() {
     setLoading(true)
     try {
       const { Password, ...formDataWithoutPassword } = values;  // Exclude Password
-      await signUp(values.email, values.Password, values.fullName, formDataWithoutPassword)
+      await signUp(values.email, Password, values.fullName, formDataWithoutPassword)
       setTimeout(() => {
         router.push('/coding-platform/start')
       }, 500)

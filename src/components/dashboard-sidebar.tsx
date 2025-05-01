@@ -4,17 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
-  Home,
   FileCode,
   User,
-  History,
   Users,
   ShieldCheck,
   LogOut,
   ListChecks,
 } from 'lucide-react';
 import { JSX } from 'react';
-import { Button } from './ui/button';
 import { app } from '@/lib/connectDatabase';
 import { getAuth, signOut } from "firebase/auth";
 import { useRouter } from 'next/navigation';

@@ -28,12 +28,12 @@ import { Pencil } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
-import { Timestamp } from 'firebase/firestore'
+
 
 function SuperAdminDashboard() {
   const [adminUserData, setAdminUserData] = useState<QuizAppUserDocData[]>([])
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
-  const [loadingUserId, setLoadingUserId] = useState<string | null>(null)
+  const [, setLoadingUserId] = useState<string | null>(null)
   const [totalUsers, setTotalUsers] = useState(0)
   const { role } = useAuth()
 

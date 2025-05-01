@@ -2,7 +2,7 @@
 
 import { useForm, useFieldArray, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { codeTestSchema, CodeTest, Challenge } from '@/form_schemas/challengeSchema';
+import { codeTestSchema, CodeTest } from '@/form_schemas/challengeSchema';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -10,10 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { FormField, FormItem, FormControl, FormMessage, FormLabel } from '@/components/ui/form';
 import { useState } from 'react';
-import { addDoc, doc, getFirestore, setDoc } from "firebase/firestore";
+import { addDoc, getFirestore } from "firebase/firestore";
 import { app } from '@/lib/connectDatabase';
 import { collection, Timestamp } from "firebase/firestore"; 
-import { getAuth } from 'firebase/auth';
 import { Plus, Trash2, CheckCircle2, Beaker, Clock } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Separator } from '@/components/ui/separator';
@@ -157,7 +156,7 @@ export default function CodeTestForm() {
 
         {challengeFields.length === 0 && (
           <Card className="bg-gray-50 border-dashed border-2 p-8 text-center">
-            <p className="text-gray-500">No problems added yet. Click "Add Problem" to get started.</p>
+            <p className="text-gray-500">No problems added yet. Click &quot;Add Problem&quot; to get started.</p>
           </Card>
         )}
 

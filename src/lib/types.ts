@@ -51,12 +51,12 @@ export type SubmissionResult = {
     }[]
 }
 
-type PistonLanguageInfo = {
+export type PistonLanguageInfo = {
     pistonLanguage: string,
     pistonVersion: string
 }
 
-type LanguageInfo = {
+export type LanguageInfo = {
     label: string
     monacoId: string
     value: string
@@ -92,7 +92,7 @@ export const EDITOR_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
   };
   
 
-type adminChallengeCreationData = {
+export type adminChallengeCreationData = {
     testTitle: string
     testDescription: string
     userId: string

@@ -30,9 +30,9 @@ import { useAuth } from '@/context/AuthContext'
 function SuperAdminDashboard() {
   const [adminUserData, setAdminUserData] = useState<adminUserDocData[]>([])
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
-  const [loadingUserId, setLoadingUserId] = useState<string | null>(null)
+  const [, setLoadingUserId] = useState<string | null>(null)
   const [totalUsers, setTotalUsers] = useState(0)
-  const { user, role } = useAuth()
+  const {  role } = useAuth()
 
   async function fetchAllAdminUserData() {
     try {

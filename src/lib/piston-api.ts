@@ -49,13 +49,19 @@ const executeCode = async (source: string, language: string, input: string) => {
       } else {
         throw new Error("Invalid response format from code execution API")
       }
-    } catch (err: any) {
-      console.error("Code execution error:", err)
+    } catch (err: unknown) {
+      console.error("Code execution error:", err);
+      
+      let errorMessage = "An unknown error occurred.";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+    
       return {
         output: "",
-        error: err.message,
+        error: errorMessage,
         exitCode: -1
-      }
+      };
     }
   }
 

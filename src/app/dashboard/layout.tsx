@@ -1,7 +1,7 @@
 'use client';
 import DashboardSidebar from '@/components/dashboard-sidebar';
 import '@/app/globals.css';
-import { ProtectedRoute, UserRole, AdminRoute, useAuth } from '@/context/AuthContext';
+import {AdminRoute, useAuth } from '@/context/AuthContext';
 import { Toaster } from "@/components/ui/sonner";
 import LoadingScreen from '@/components/LoadingScreen';
 

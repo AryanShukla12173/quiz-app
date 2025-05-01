@@ -14,6 +14,7 @@ import { doc, getDoc, getFirestore, setDoc } from 'firebase/firestore';
 import { app } from '@/lib/connectDatabase';
 import { useRouter } from 'next/navigation';
 import LoadingScreen from '@/components/LoadingScreen';
+import { FirebaseError } from 'firebase/app';
 
 // Define user roles with values that exactly match what's stored in database
 export enum UserRole {
@@ -31,10 +32,10 @@ type AuthContextType = {
   
   // Auth methods
   signIn: (email: string, password: string, expectedRole?: UserRole) => Promise<void>;
-  signUp: (email: string, password: string, displayName: string, formData?: Record<string, any>) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string, formData?: Record<string, unknown>) => Promise<void>;
   logOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  updateUserProfile: (displayName: string, profileData?: Record<string, any>) => Promise<void>;
+  updateUserProfile: (displayName: string, profileData?: Record<string, unknown>) => Promise<void>;
   clearError: () => void;
 };
 
@@ -71,7 +72,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+
   
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -164,28 +165,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       
       // Auth state listener will handle setting the user and role
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign in error:', error);
-      
-      // Handle different error codes
-      if (error.code === 'auth/invalid-credential') {
-        setError('Invalid email or password. Please try again.');
-      } else if (error.code === 'auth/user-not-found') {
-        setError('No account found with this email.');
-      } else if (error.code === 'auth/wrong-password') {
-        setError('Incorrect password.');
-      } else if (error.code === 'auth/too-many-requests') {
-        setError('Too many failed login attempts. Please try again later.');
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'auth/invalid-credential':
+            setError('Invalid email or password. Please try again.');
+            break;
+          case 'auth/user-not-found':
+            setError('No account found with this email.');
+            break;
+          case 'auth/wrong-password':
+            setError('Incorrect password.');
+            break;
+          case 'auth/too-many-requests':
+            setError('Too many failed login attempts. Please try again later.');
+            break;
+          default:
+            setError(`Authentication error: ${error.message}`);
+        }
       } else {
-        setError(`Authentication error: ${error.message}`);
+        setError('An unknown error occurred during sign-in.');
       }
-      
       setLoading(false);
     }
   };
 
   // Sign up with email, password, display name, and arbitrary form data
-  const signUp = async (email: string, password: string, displayName: string, formData: Record<string, any> = {}) => {
+  const signUp = async (email: string, password: string, displayName: string, formData: Record<string, unknown> = {}) => {
     setLoading(true);
     setError(null);
     
@@ -214,20 +221,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.log('User profile created with data:', profileData);
       
       // Auth state listener will handle setting the user and role
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign up error:', error);
-      
-      // Handle different error codes
-      if (error.code === 'auth/email-already-in-use') {
-        setError('An account with this email already exists.');
-      } else if (error.code === 'auth/invalid-email') {
-        setError('Invalid email address.');
-      } else if (error.code === 'auth/weak-password') {
-        setError('Password is too weak. Please use at least 6 characters.');
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            setError('An account with this email already exists.');
+            break;
+          case 'auth/invalid-email':
+            setError('Invalid email address.');
+            break;
+          case 'auth/weak-password':
+            setError('Password is too weak. Please use at least 6 characters.');
+            break;
+          default:
+            setError(`Registration error: ${error.message}`);
+        }
       } else {
-        setError(`Registration error: ${error.message}`);
+        setError('An unknown error occurred during registration.');
       }
-      
       setLoading(false);
     }
   };
@@ -239,9 +251,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       await signOut(auth);
       // Auth state listener will handle clearing the user and role
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign out error:', error);
-      setError(`Sign out error: ${error.message}`);
+      setError(`Sign out error: ${error}`);
     }
   };
 
@@ -253,23 +265,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       await sendPasswordResetEmail(auth, email);
       setLoading(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Password reset error:', error);
-      
-      if (error.code === 'auth/user-not-found') {
-        setError('No account found with this email.');
-      } else if (error.code === 'auth/invalid-email') {
-        setError('Invalid email address.');
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'auth/user-not-found':
+            setError('No account found with this email.');
+            break;
+          case 'auth/invalid-email':
+            setError('Invalid email address.');
+            break;
+          default:
+            setError(`Password reset error: ${error.message}`);
+        }
       } else {
-        setError(`Password reset error: ${error.message}`);
+        setError('An unknown error occurred during password reset.');
       }
-      
       setLoading(false);
     }
   };
 
   // Update user profile function - now with additional profile data support
-  const updateUserProfile = async (displayName: string, profileData: Record<string, any> = {}) => {
+  const updateUserProfile = async (displayName: string, profileData: Record<string, unknown> = {}) => {
     setError(null);
     
     if (!user) {
@@ -290,9 +307,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Force refresh of user object
       setUser({ ...user });
       console.log('User profile updated successfully!');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Profile update error:', error);
-      setError(`Profile update error: ${error.message}`);
+      setError(`Profile update error: ${error}`);
     }
   };
 
@@ -400,10 +417,10 @@ export const ProtectedRoute = ({
         <div className="bg-red-900/30 border border-red-500 rounded-lg p-8 max-w-md text-center">
           <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
           <p className="mb-4">
-            Your account doesn't have the required permissions to access this area.
+            Your account doesn&apos;t have the required permissions to access this area.
           </p>
           <p className="text-sm text-gray-300">
-            You'll be redirected to the appropriate area in a moment...
+            You&apos;ll be redirected to the appropriate area in a moment...
           </p>
         </div>
       </div>
