@@ -1,9 +1,10 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from 'zod'
 import registerFormSchema from '@/form_schemas/registerFormSchema'
+import { UserRole, useAuth } from '@/context/AuthContext'
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -17,61 +18,78 @@ import { Input } from "@/components/ui/input"
 import {
   Mail,
   Lock,
-  MapPin,
-  Landmark,
-  School,
+  User,
+  Briefcase,
+  Building2,
   AlertCircle
 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { UserRole } from '@/form_schemas/registerFormSchema'
-import { useAuth } from '@/context/AuthContext'
-import { indianStates } from '@/lib/constants'
+
 function SignUp() {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
-
-  // Use the auth context
-  const { signUp, error, clearError } = useAuth()
-
+  const { signUp, error, clearError, user, role, loading: authLoading } = useAuth()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [signUpComplete, setSignUpComplete] = useState(false)
+  
   const form = useForm<z.infer<typeof registerFormSchema>>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
+      fullName: "",
       email: "",
       password: "",
-      pincode: "",
-      collegename: "",
-      state: "",
+      designation: "",
+      department: "",
       role: UserRole.quiz_app_admin
     },
   })
 
   async function onSubmit(formData: z.infer<typeof registerFormSchema>) {
+    console.log('Form submitted with data:', formData)
+    
+    if (isSubmitting) return
+    
     try {
-      clearError() // Clear any previous errors
-      setLoading(true)
-
-      // Use the signUp method from auth context
-      // Note: While AuthContext's signUp expects a displayName, we're using collegename as a substitute
-      await signUp(formData.email, formData.password,"",formData)
-
-      // After successful signup, update additional user profile info
-      // Note: The basic user creation and role are handled by AuthContext,
-      // but we need to separately handle the additional fields not covered by AuthContext
-
-      // Delay the redirect slightly to allow for data fetching on the dashboard
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 500) // Half a second delay
-
+      clearError()
+      setIsSubmitting(true)
+      
+      const { password, ...rest } = formData
+      await signUp(formData.email, formData.password, formData.fullName, rest)
+      
+      console.log('signUp function completed successfully')
+      // Mark sign-up as complete to trigger the redirect logic
+      setSignUpComplete(true)
     } catch (error: any) {
-      console.error(error)
-      // Error handling is already done in the AuthContext
-    } finally {
-      setLoading(false) // Ensure loading is always set to false after the operation
+      console.error('SignUp error:', error)
+      setIsSubmitting(false)
     }
   }
+
+  // Handle successful sign-up and redirection
+  useEffect(() => {
+    // Only attempt to redirect if:
+    // 1. Sign-up has been completed successfully
+    // 2. We're not in a loading state
+    // 3. A user exists
+    if (signUpComplete && !authLoading && user) {
+      console.log('Sign-up complete, redirecting to dashboard')
+      
+      // Short timeout to ensure Firebase auth state has fully propagated
+      const redirectTimer = setTimeout(() => {
+        router.push('/dashboard')
+      }, 500)
+      
+      return () => clearTimeout(redirectTimer)
+    }
+  }, [signUpComplete, authLoading, user, router])
+
+  // Reset submission state when auth loading changes
+  useEffect(() => {
+    if (!authLoading && isSubmitting) {
+      setIsSubmitting(false)
+    }
+  }, [authLoading, isSubmitting])
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4 font-geist">
@@ -85,17 +103,13 @@ function SignUp() {
               Signing up takes less than a minute!
             </p>
           </div>
-
+          
           {/* Right - Form Section */}
           <div className="md:w-1/2 p-8">
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
-              >
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <h2 className="text-2xl font-bold text-center text-purple-700 mb-6">Sign Up</h2>
-
-                {/* Error alert with improved styling */}
+                
                 {error && (
                   <Alert variant="destructive" className="border-red-500 bg-red-50 mb-4">
                     <AlertCircle className="h-4 w-4" />
@@ -103,10 +117,38 @@ function SignUp() {
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
-
-                {/* Reorganized form fields */}
+                
+                {signUpComplete && !error && (
+                  <Alert className="border-green-500 bg-green-50 mb-4">
+                    <AlertTitle className="font-semibold">Registration Successful</AlertTitle>
+                    <AlertDescription>Account created! Redirecting to dashboard...</AlertDescription>
+                  </Alert>
+                )}
+                
                 <div className="space-y-5">
-                  {/* Email field - full width */}
+                  {/* Full Name */}
+                  <FormField
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700 text-base">Full Name</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center border border-gray-200 px-4 py-3 rounded-lg">
+                            <User className="w-5 h-5 text-purple-500 mr-3" />
+                            <Input
+                              placeholder="John Doe"
+                              {...field}
+                              className="flex-1 bg-transparent border-none outline-none p-0 text-base"
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* Email */}
                   <FormField
                     control={form.control}
                     name="email"
@@ -114,13 +156,13 @@ function SignUp() {
                       <FormItem>
                         <FormLabel className="text-gray-700 text-base">Email</FormLabel>
                         <FormControl>
-                          <div className="flex items-center rounded-lg border border-gray-200 px-4 py-3">
+                          <div className="flex items-center border border-gray-200 px-4 py-3 rounded-lg">
                             <Mail className="w-5 h-5 text-purple-500 mr-3" />
                             <Input
                               placeholder="you@example.com"
                               type="email"
                               {...field}
-                              className="flex-1 border-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-base"
+                              className="flex-1 bg-transparent border-none outline-none p-0 text-base"
                             />
                           </div>
                         </FormControl>
@@ -128,8 +170,52 @@ function SignUp() {
                       </FormItem>
                     )}
                   />
-
-                  {/* Password field - full width */}
+                  
+                  {/* Designation */}
+                  <FormField
+                    control={form.control}
+                    name="designation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700 text-base">Designation</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center border border-gray-200 px-4 py-3 rounded-lg">
+                            <Briefcase className="w-5 h-5 text-purple-500 mr-3" />
+                            <Input
+                              placeholder="Professor, Student, etc."
+                              {...field}
+                              className="flex-1 bg-transparent border-none outline-none p-0 text-base"
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* Department */}
+                  <FormField
+                    control={form.control}
+                    name="department"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700 text-base">Department</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center border border-gray-200 px-4 py-3 rounded-lg">
+                            <Building2 className="w-5 h-5 text-purple-500 mr-3" />
+                            <Input
+                              placeholder="Computer Science, etc."
+                              {...field}
+                              className="flex-1 bg-transparent border-none outline-none p-0 text-base"
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* Password */}
                   <FormField
                     control={form.control}
                     name="password"
@@ -137,89 +223,13 @@ function SignUp() {
                       <FormItem>
                         <FormLabel className="text-gray-700 text-base">Password</FormLabel>
                         <FormControl>
-                          <div className="flex items-center rounded-lg border border-gray-200 px-4 py-3">
+                          <div className="flex items-center border border-gray-200 px-4 py-3 rounded-lg">
                             <Lock className="w-5 h-5 text-purple-500 mr-3" />
                             <Input
                               placeholder="••••••••"
                               type="password"
                               {...field}
-                              className="flex-1 border-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-base"
-                            />
-                          </div>
-                        </FormControl>
-                        <p className="text-xs text-gray-500 mt-1">Use at least 6 characters.</p>
-                      </FormItem>
-                    )}
-                  />
-                  {/* Two columns for state and pincode */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* State field */}
-                    <FormField
-                      control={form.control}
-                      name="state"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700 text-base">State</FormLabel>
-                          <FormControl>
-                            <div className="flex items-center rounded-lg border border-gray-200 px-4 py-3 bg-white">
-                              <MapPin className="w-5 h-5 text-purple-500 mr-3" />
-                              <select
-                                {...field}
-                                className="flex-1 bg-transparent border-none outline-none text-base"
-                              >
-                                <option value="" disabled>Select your State</option>
-                                {indianStates.map((state) => (
-                                  <option key={state} value={state}>
-                                    {state}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-
-
-                    {/* PIN Code field */}
-                    <FormField
-                      control={form.control}
-                      name="pincode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700 text-base">PIN Code</FormLabel>
-                          <FormControl>
-                            <div className="flex items-center rounded-lg border border-gray-200 px-4 py-3">
-                              <Landmark className="w-5 h-5 text-purple-500 mr-3" />
-                              <Input
-                                placeholder="560001"
-                                {...field}
-                                className="flex-1 border-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-base"
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/* College Name field - full width */}
-                  <FormField
-                    control={form.control}
-                    name="collegename"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700 text-base">College</FormLabel>
-                        <FormControl>
-                          <div className="flex items-center rounded-lg border border-gray-200 px-4 py-3">
-                            <School className="w-5 h-5 text-purple-500 mr-3" />
-                            <Input
-                              placeholder="Your College"
-                              {...field}
-                              className="flex-1 border-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-base"
+                              className="flex-1 bg-transparent border-none outline-none p-0 text-base"
                             />
                           </div>
                         </FormControl>
@@ -228,17 +238,17 @@ function SignUp() {
                     )}
                   />
                 </div>
-
+                
                 <div className="text-purple-600 hover:text-purple-800 cursor-pointer text-sm pt-2">
                   <Link href="/sign-in">Already registered? Sign in here</Link>
                 </div>
-
+                
                 <Button
                   type="submit"
                   className="w-full bg-purple-600 text-white font-semibold hover:bg-purple-700 py-6 text-lg"
-                  disabled={loading}
+                  disabled={isSubmitting || authLoading || signUpComplete}
                 >
-                  {loading ? "Creating Account..." : "Sign Up"}
+                  {isSubmitting ? "Creating Account..." : signUpComplete ? "Account Created!" : "Sign Up"}
                 </Button>
               </form>
             </Form>

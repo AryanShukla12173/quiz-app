@@ -580,7 +580,7 @@ function TestComponent() {
                         ) : loading ? (
                             'Submitting...'
                         ) : (
-                            'Submit All Solutions'
+                            'Submit'
                         )}
                     </button>
 

@@ -3,24 +3,50 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Home, FileCode, User, History, LogOut } from 'lucide-react';
+import {
+  Home,
+  FileCode,
+  User,
+  History,
+  Users,
+  ShieldCheck,
+  LogOut,
+  ListChecks,
+} from 'lucide-react';
 import { JSX } from 'react';
 import { Button } from './ui/button';
 import { app } from '@/lib/connectDatabase';
 import { getAuth, signOut } from "firebase/auth";
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { UserRole } from '@/context/AuthContext';
 
 const iconMap: Record<string, JSX.Element> = {
-  Home: <Home className="w-4 h-4 mr-2" />,
+  'Profile': <User className="w-4 h-4 mr-2" />,
+  'Admin User List': <ShieldCheck className="w-4 h-4 mr-2" />,
+  'Quiz App User List': <Users className="w-4 h-4 mr-2" />,
+  'Admin User Management': <ShieldCheck className="w-4 h-4 mr-2" />,
+  'Quiz App User Management': <Users className="w-4 h-4 mr-2" />,
+  'Challenge Management': <ListChecks className="w-4 h-4 mr-2" />,
   'Challenge Creation': <FileCode className="w-4 h-4 mr-2" />,
-  Profile: <User className="w-4 h-4 mr-2" />,
-  'Code Test History': <History className="w-4 h-4 mr-2" />
 };
 
-const dashboardActions = [
+// Define admin and superadmin actions
+const adminActions = [
+  { label: 'Profile', href: '/dashboard' },
+  { label: 'Admin User List', href: '/dashboard/admin_user_management' },
+  { label: 'Quiz App User List', href: '/dashboard/quiz_user_management' },
+  { label: 'Challenge Management', href: '/dashboard/history' },
+  { label: 'Challenge Creation', href: '/dashboard/challenges' },
+  
+];
+
+const superAdminActions = [
   { label: 'Profile', href: '/dashboard' },
   { label: 'Challenge Creation', href: '/dashboard/challenges' },
-  { label: 'Code Test History', href: '/dashboard/history' },
+  { label: 'Challenge Management', href: '/dashboard/history' },
+  { label: 'Admin User Management', href: '/dashboard/admin_user_management' },
+  { label: 'Quiz App User Management', href: '/dashboard/quiz_user_management' },
 ];
 
 const auth = getAuth(app);
@@ -28,16 +54,19 @@ const auth = getAuth(app);
 export default function DashboardSidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { role } = useAuth(); // Access user role from AuthContext
 
   async function logOut() {
     try {
       await signOut(auth);
-      // Optionally, redirect the user after logging out
-      router.push('/'); // replace with your desired URL
+      router.push('/'); // Redirect to homepage after logout
     } catch (error) {
       console.error(error);
     }
   }
+
+  // Determine which actions to display based on role
+  const dashboardActions = role === UserRole.quiz_app_superadmin ? superAdminActions : adminActions;
 
   return (
     <aside className="w-64 min-h-screen h-screen p-6 bg-gradient-to-b from-violet-600 to-purple-500 text-white shadow-lg rounded-r-2xl">

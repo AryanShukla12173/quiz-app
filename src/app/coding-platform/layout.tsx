@@ -4,7 +4,6 @@ import { AuthProvider, ProtectedRoute, UserRole } from '@/context/AuthContext';
 import { usePathname } from 'next/navigation';
 import { Toaster } from 'sonner';
 import '@/app/globals.css';
-import { Metadata } from 'next';
 
 
 export default function CodingPlatformLayout({ children }: { children: React.ReactNode }) {

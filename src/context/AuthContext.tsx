@@ -15,10 +15,11 @@ import { app } from '@/lib/connectDatabase';
 import { useRouter } from 'next/navigation';
 import LoadingScreen from '@/components/LoadingScreen';
 
-// Define user roles
+// Define user roles with values that exactly match what's stored in database
 export enum UserRole {
   quiz_app_user = 'quiz-app-user',
-  quiz_app_admin = 'quiz-app-admin'
+  quiz_app_admin = 'quiz-app-admin',
+  quiz_app_superadmin = 'quiz-app-superadmin'
 }
 
 // Auth context type definition with auth methods
@@ -84,8 +85,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (userProfileSnap.exists()) {
         const profileData = userProfileSnap.data();
         if (profileData && 'role' in profileData) {
-          return profileData.role as UserRole;
+          const rawRole = profileData.role;
+          console.log("Raw role from database:", rawRole);
+          
+          // Proper role mapping based on database values
+          if (rawRole === 'quiz-app-user') {
+            return UserRole.quiz_app_user;
+          } else if (rawRole === 'quiz-app-admin') {
+            return UserRole.quiz_app_admin;
+          } else if (rawRole === 'quiz-app-superadmin') {
+            console.log("Superadmin role detected, returning:", UserRole.quiz_app_superadmin);
+            return UserRole.quiz_app_superadmin;
+          }
+          
+          // Handle unexpected role values
+          console.log("Unrecognized role format:", rawRole);
+        } else {
+          console.log("No role field found in user profile");
         }
+      } else {
+        console.log("User profile document does not exist");
       }
       
       return null;
@@ -102,8 +121,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   
       const fetchAndSetRole = async () => {
         if (firebaseUser) {
-          const userRole = await fetchUserRole(firebaseUser.uid);
-          setRole(userRole);
+          try {
+            const userRole = await fetchUserRole(firebaseUser.uid);
+            console.log("Setting user role to:", userRole);
+            setRole(userRole);
+          } catch (error) {
+            console.error("Error setting user role:", error);
+            setRole(null);
+          }
         } else {
           setRole(null);
         }
@@ -184,7 +209,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       };
       
       await setDoc(userProfileRef, profileData);
-      
+      setRole(profileData.role)
       // For debugging
       console.log('User profile created with data:', profileData);
       
@@ -316,20 +341,37 @@ export const ProtectedRoute = ({
   const [unauthorized, setUnauthorized] = useState(false);
 
   useEffect(() => {
-    if (loading) return; // Wait for auth to finish loading
+    if (loading) {
+      console.log("Still loading auth state...");
+      return; // Wait for auth to finish loading
+    }
 
     const checkAccess = async () => {
+      console.log("Checking access with user:", user?.uid);
+      console.log("Current role:", role);
+      console.log("Allowed roles:", allowedRoles.map(r => r));
+      
+      // Access check logic
       if (!user) {
-        // No user, redirect to login
+        console.log("No authenticated user, redirecting to", redirectPath);
         router.replace(redirectPath);
-      } else if (role && !allowedRoles.includes(role)) {
-        // Wrong role, handle unauthorized access
+      } else if (!role) {
+        console.log("User authenticated but no role found");
         setUnauthorized(true);
         
-        // Log them out and redirect after a delay
+        // Handle no role case - could be due to database error
         setTimeout(async () => {
           await logOut();
-          
+          router.replace('/sign-in?error=no-role');
+        }, 3000);
+      } else if (!allowedRoles.includes(role)) {
+        console.log("User role not in allowed roles");
+        console.log("User role:", role);
+        console.log("Allowed roles:", allowedRoles);
+        setUnauthorized(true);
+        
+        setTimeout(async () => {
+          await logOut();
           // Redirect based on role
           if (role === UserRole.quiz_app_user) {
             router.replace('/dashboard');
@@ -338,9 +380,9 @@ export const ProtectedRoute = ({
           } else {
             router.replace('/unauthorized');
           }
-        }, 3000); // 3 seconds delay to show the unauthorized message
+        }, 3000);
       } else {
-        // Correct user & role
+        console.log("Access granted!");
         setIsChecking(false);
       }
     };
@@ -349,7 +391,7 @@ export const ProtectedRoute = ({
   }, [user, role, loading, allowedRoles, redirectPath, router, logOut]);
 
   if (loading || (isChecking && !unauthorized)) {
-    return <LoadingScreen message={loading ? 'Loading...' : 'Checking access...'} />;
+    return <LoadingScreen message={loading ? 'Loading authentication...' : 'Checking access permissions...'} />;
   }
 
   if (unauthorized) {
@@ -373,8 +415,16 @@ export const ProtectedRoute = ({
 
 // AdminRoute - Specialized route for admin access only
 export const AdminRoute = ({ children, redirectPath = '/sign-in' }: Omit<ProtectedRouteProps, 'allowedRoles'>) => {
+  // Explicitly define the allowed roles
+  const adminRoles: UserRole[] = [UserRole.quiz_app_admin, UserRole.quiz_app_superadmin];
+  
+  console.log("AdminRoute using roles:", adminRoles);
+  
   return (
-    <ProtectedRoute allowedRoles={[UserRole.quiz_app_admin]} redirectPath={redirectPath}>
+    <ProtectedRoute 
+      allowedRoles={adminRoles}
+      redirectPath={redirectPath}
+    >
       {children}
     </ProtectedRoute>
   );
@@ -383,7 +433,10 @@ export const AdminRoute = ({ children, redirectPath = '/sign-in' }: Omit<Protect
 // UserRoute - Specialized route for regular users
 export const UserRoute = ({ children, redirectPath = '/coding-platform/sign-in' }: Omit<ProtectedRouteProps, 'allowedRoles'>) => {
   return (
-    <ProtectedRoute allowedRoles={[UserRole.quiz_app_user]} redirectPath={redirectPath}>
+    <ProtectedRoute 
+      allowedRoles={[UserRole.quiz_app_user]} 
+      redirectPath={redirectPath}
+    >
       {children}
     </ProtectedRoute>
   );

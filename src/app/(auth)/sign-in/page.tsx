@@ -1,5 +1,5 @@
 'use client'
-import React from 'react'
+import React, { useState } from 'react'
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from 'zod'
@@ -22,11 +22,12 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useAuth, UserRole } from '@/context/AuthContext'// Import the auth context hook
+import { useAuth } from '@/context/AuthContext' // Remove UserRole from import
 
 function SignIn() {
   const router = useRouter()
   const { signIn, error, loading, clearError } = useAuth() // Use the auth context
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -37,12 +38,21 @@ function SignIn() {
   });
 
   async function onSubmit(formData: z.infer<typeof loginSchema>) {
+    setIsSubmitting(true)
     clearError() // Clear any previous errors
-    await signIn(formData.email, formData.password, UserRole.quiz_app_admin)
     
-    // No need to manually redirect - the protected route will handle this
-    // You can add a redirect here if you want to force navigation after sign-in
-    router.push('/dashboard')
+    try {
+      // Sign in without specifying a role - let the auth context handle role validation
+      await signIn(formData.email, formData.password)
+      
+      // After successful authentication, the auth context will set the user's role
+      // Let the router handle the redirect based on actual role
+      router.push('/dashboard')
+    } catch (err) {
+      console.error("Error during sign in:", err)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -53,7 +63,7 @@ function SignIn() {
           <div className="md:w-1/2 bg-gradient-to-br from-purple-600 to-purple-700 p-8 flex flex-col justify-center items-center text-center">
             <h1 className="text-3xl font-bold text-white mb-4">Welcome!</h1>
             <p className="text-white text-lg">
-              Login to create quizzes and coding rounds.
+              Login to access the quiz management platform.
             </p>
           </div>
 
@@ -64,7 +74,7 @@ function SignIn() {
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-6"
               >
-                <h2 className="text-2xl font-bold text-center text-purple-700 mb-6">Login</h2>
+                <h2 className="text-2xl font-bold text-center text-purple-700 mb-6">Admin Login</h2>
 
                 {/* Error alert with improved styling */}
                 {error && (
@@ -133,9 +143,9 @@ function SignIn() {
                 <Button 
                   type="submit" 
                   className="w-full bg-purple-600 text-white font-semibold hover:bg-purple-700"
-                  disabled={loading}
+                  disabled={loading || isSubmitting}
                 >
-                  {loading ? "Logging in..." : "Login"}
+                  {loading || isSubmitting ? "Logging in..." : "Login"}
                 </Button>
               </form>
             </Form>

@@ -1,3 +1,4 @@
+import { UserRole } from "@/context/AuthContext"
 import { Timestamp } from "firebase/firestore"
 import { editor } from "monaco-editor"
 export type ChallengesDocumentData = {
@@ -115,4 +116,42 @@ type adminChallengeCreationData = {
             ]
         }
     ]
+}
+
+export type consolidatedUserProfileCollectionData = {
+    department?: string,
+    designation?: string,
+    displayName: string,
+    email : string,
+    fullName?: string,
+    role: string,
+    createdAt: string,
+    Branch?:string,
+    Enrollment_ID?: string,
+    Year?: string,
+
+    
+}
+
+export type adminUserDocData = {
+    id?:string,
+    fullName : string,
+    email : string,
+    createdAt : string,
+    department : string,
+    designation : string,
+    role : UserRole
+    displayName : string,
+
+}
+export type QuizAppUserDocData = {
+    id?: string
+    Branch : string,
+    Enrollment_ID : string,
+    fullName : string,
+    Year : string,
+    createdAt : string,
+    displayName : string,
+    email: string,
+    role: UserRole
 }
