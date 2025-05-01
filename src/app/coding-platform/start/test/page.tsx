@@ -1,5 +1,5 @@
 "use client"
-import React from 'react'
+import React, { Suspense } from 'react'
 import { useEffect, useState } from 'react'
 import {  db } from '@/lib/connectDatabase'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -11,7 +11,27 @@ import { TabsTrigger } from '@radix-ui/react-tabs'
 import { executeCode } from '@/lib/piston-api'
 import { CheckCircle, XCircle, Clock, AlarmClock } from 'lucide-react'
 import { useCurrentUserId } from '@/hooks/useGetCurrentUserId'
-
+// Client Component wrapper to handle search params
+function TestComponentWrapper() {
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <TestComponent />
+      </Suspense>
+    );
+  }
+  
+  // Loading screen component
+  function LoadingScreen() {
+    return (
+      <div className="w-screen h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center p-8 bg-white rounded shadow-md">
+          <Clock className="h-12 w-12 mx-auto mb-4 animate-spin text-blue-600" />
+          <p className="text-lg font-medium">Loading test data...</p>
+        </div>
+      </div>
+    );
+  }
+  
 function TestComponent() {
     const searchParams = useSearchParams()
     const router = useRouter()
