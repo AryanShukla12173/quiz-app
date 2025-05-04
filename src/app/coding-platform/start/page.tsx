@@ -149,7 +149,7 @@ export default function Page() {
               variant="outline"
               size="sm"
               onClick={handleSignOut}
-              className="bg-black text-white hover:bg-gray-700"
+              className="bg-slate-700 text-slate-100 border border-slate-600 hover:bg-slate-600 hover:text-white"
             >
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
