@@ -165,22 +165,6 @@ export default function LoginForm() {
           </Form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-muted-foreground/20" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="border-muted-foreground/20" disabled={isLoading}>
-              GitHub
-            </Button>
-            <Button variant="outline" className="border-muted-foreground/20" disabled={isLoading}>
-              Google
-            </Button>
-          </div>
           <div className="text-center text-sm mt-2">
             Don&apos;t have an account?{" "}
             <Link
@@ -188,6 +172,15 @@ export default function LoginForm() {
               className="text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 font-medium"
             >
               Sign up
+            </Link>
+           
+          </div>
+          <div className="text-center text-sm mt-2">
+            <Link
+              href="/"
+              className="text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 font-medium"
+            >
+              Home
             </Link>
           </div>
         </CardFooter>

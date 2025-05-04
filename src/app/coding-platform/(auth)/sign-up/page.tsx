@@ -219,7 +219,9 @@ function SignUp() {
               <div className="text-sm text-center text-purple-600 hover:text-purple-800">
                 <Link href="/coding-platform/sign-in">Already registered? Sign in here</Link>
               </div>
-
+              <div className="text-sm text-center text-purple-600 hover:text-purple-800">
+                <Link href="/">Go back</Link>
+              </div>
               <Button type="submit" className="w-full bg-purple-600 text-white font-semibold hover:bg-purple-700 py-6 text-lg" disabled={loading}>
                 {loading ? "Creating Account..." : "Sign Up"}
               </Button>
