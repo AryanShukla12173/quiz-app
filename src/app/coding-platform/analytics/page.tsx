@@ -179,7 +179,7 @@ export default function UserSubmissionsTable() {
           userNames[userId] = userId.slice(0, 6);
         }
       });
-
+      
       const leaderboardArray: LeaderboardEntry[] = userIds.map(userId => ({
         userId,
         name: userNames[userId],
@@ -202,6 +202,7 @@ export default function UserSubmissionsTable() {
       });
 
       setLeaderboard(leaderboardArray);
+      
     } catch (error) {
       console.error('Error loading leaderboard:', error);
     } finally {

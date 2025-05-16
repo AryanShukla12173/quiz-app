@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const profileData = userProfileSnap.data();
         if (profileData && 'role' in profileData) {
           const rawRole = profileData.role;
-          console.log("Raw role from database:", rawRole);
+          // console.log("Raw role from database:", rawRole);
           
           // Proper role mapping based on database values
           if (rawRole === 'quiz-app-user') {
@@ -95,17 +95,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           } else if (rawRole === 'quiz-app-admin') {
             return UserRole.quiz_app_admin;
           } else if (rawRole === 'quiz-app-superadmin') {
-            console.log("Superadmin role detected, returning:", UserRole.quiz_app_superadmin);
+            // console.log("Superadmin role detected, returning:", UserRole.quiz_app_superadmin);
             return UserRole.quiz_app_superadmin;
           }
           
           // Handle unexpected role values
-          console.log("Unrecognized role format:", rawRole);
+          // console.log("Unrecognized role format:", rawRole);
         } else {
-          console.log("No role field found in user profile");
+          // console.log("No role field found in user profile");
         }
       } else {
-        console.log("User profile document does not exist");
+        // console.log("User profile document does not exist");
       }
       
       return null;
@@ -124,7 +124,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (firebaseUser) {
           try {
             const userRole = await fetchUserRole(firebaseUser.uid);
-            console.log("Setting user role to:", userRole);
+            // console.log("Setting user role to:", userRole);
             setRole(userRole);
           } catch (error) {
             console.error("Error setting user role:", error);
@@ -218,7 +218,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       await setDoc(userProfileRef, profileData);
       setRole(profileData.role)
       // For debugging
-      console.log('User profile created with data:', profileData);
+      // console.log('User profile created with data:', profileData);
       
       // Auth state listener will handle setting the user and role
     } catch (error: unknown) {
@@ -306,7 +306,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // Force refresh of user object
       setUser({ ...user });
-      console.log('User profile updated successfully!');
+      // console.log('User profile updated successfully!');
     } catch (error: unknown) {
       console.error('Profile update error:', error);
       setError(`Profile update error: ${error}`);
@@ -359,21 +359,21 @@ export const ProtectedRoute = ({
 
   useEffect(() => {
     if (loading) {
-      console.log("Still loading auth state...");
+      // console.log("Still loading auth state...");
       return; // Wait for auth to finish loading
     }
 
     const checkAccess = async () => {
-      console.log("Checking access with user:", user?.uid);
-      console.log("Current role:", role);
-      console.log("Allowed roles:", allowedRoles.map(r => r));
+      // console.log("Checking access with user:", user?.uid);
+      // console.log("Current role:", role);
+      // console.log("Allowed roles:", allowedRoles.map(r => r));
       
       // Access check logic
       if (!user) {
-        console.log("No authenticated user, redirecting to", redirectPath);
+        // console.log("No authenticated user, redirecting to", redirectPath);
         router.replace(redirectPath);
       } else if (!role) {
-        console.log("User authenticated but no role found");
+        // console.log("User authenticated but no role found");
         setUnauthorized(true);
         
         // Handle no role case - could be due to database error
@@ -382,9 +382,9 @@ export const ProtectedRoute = ({
           router.replace('/sign-in?error=no-role');
         }, 3000);
       } else if (!allowedRoles.includes(role)) {
-        console.log("User role not in allowed roles");
-        console.log("User role:", role);
-        console.log("Allowed roles:", allowedRoles);
+        // console.log("User role not in allowed roles");
+        // console.log("User role:", role);
+        // console.log("Allowed roles:", allowedRoles);
         setUnauthorized(true);
         
         setTimeout(async () => {
@@ -399,7 +399,7 @@ export const ProtectedRoute = ({
           }
         }, 3000);
       } else {
-        console.log("Access granted!");
+        // console.log("Access granted!");
         setIsChecking(false);
       }
     };
@@ -435,7 +435,7 @@ export const AdminRoute = ({ children, redirectPath = '/sign-in' }: Omit<Protect
   // Explicitly define the allowed roles
   const adminRoles: UserRole[] = [UserRole.quiz_app_admin, UserRole.quiz_app_superadmin];
   
-  console.log("AdminRoute using roles:", adminRoles);
+  // console.log("AdminRoute using roles:", adminRoles);
   
   return (
     <ProtectedRoute 
