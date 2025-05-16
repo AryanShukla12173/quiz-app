@@ -40,11 +40,11 @@ function SignIn() {
   async function onSubmit(formData: z.infer<typeof loginSchema>) {
     setIsSubmitting(true)
     clearError() // Clear any previous errors
-    
+
     try {
       // Sign in without specifying a role - let the auth context handle role validation
       await signIn(formData.email, formData.password)
-      
+
       // After successful authentication, the auth context will set the user's role
       // Let the router handle the redirect based on actual role
       router.push('/dashboard')
@@ -139,9 +139,16 @@ function SignIn() {
                     <Link href="/sign-up">New user? Register Here</Link>
                   </div>
                 </div>
-
-                <Button 
-                  type="submit" 
+                <div className="text-center text-sm mt-2">
+                  <Link
+                    href="/"
+                    className="text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 font-medium"
+                  >
+                    Home
+                  </Link>
+                </div>
+                <Button
+                  type="submit"
                   className="w-full bg-purple-600 text-white font-semibold hover:bg-purple-700"
                   disabled={loading || isSubmitting}
                 >

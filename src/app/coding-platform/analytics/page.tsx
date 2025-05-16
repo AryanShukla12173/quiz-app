@@ -1,5 +1,5 @@
 'use client';
-import { LogOut } from 'lucide-react';
+
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/connectDatabase';
@@ -15,12 +15,18 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import LoadingScreen from '@/components/LoadingScreen';
-import { Loader2 } from 'lucide-react';
+import { Loader2, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import Link from 'next/link';
+
 export type SubmissionResult = {
   userId: string;
   createdAt: Timestamp;
@@ -55,47 +61,47 @@ type LeaderboardEntry = {
   totalPoints: number;
   rank: number;
 };
+
 const navLinks = [
-  { name: "Home", href: "/coding-platform/start" }
+  { name: 'Home', href: '/coding-platform/start' },
 ];
 
 export default function UserSubmissionsTable() {
-  const { user, loading: authLoading , logOut } = useAuth();
+  const { user, loading: authLoading, logOut } = useAuth();
   const [submissions, setSubmissions] = useState<SubmissionResultWithId[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[] | null>(null);
   const [, setActiveSubmission] = useState<SubmissionResultWithId | null>(null);
   const [loading, setLoading] = useState(true);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
-  const router = useRouter()
+  const router = useRouter();
+
   useEffect(() => {
     if (!user || authLoading) return;
+
     const fetchUserSubmissions = async () => {
-      if (!user?.uid) return;
-  
       try {
         setLoading(true);
-  
+
         const submissionsQuery = query(
           collection(db, 'codeTestsubmissions'),
           where('userId', '==', user.uid),
           orderBy('createdAt', 'desc')
         );
-  
+
         const submissionsSnap = await getDocs(submissionsQuery);
-  
+
         if (submissionsSnap.empty) {
-          setLoading(false);
+          setSubmissions([]);
           return;
         }
-  
-        const userSubmissions: SubmissionResultWithId[] = submissionsSnap.docs.map(docSnap => {
-          const data = docSnap.data() as SubmissionResult;
-          return { id: docSnap.id, ...data };
-        });
-  
+
+        const userSubmissions: SubmissionResultWithId[] = submissionsSnap.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...(docSnap.data() as SubmissionResult),
+        }));
+
         const latestSubmissions: Record<string, SubmissionResultWithId> = {};
-  
-        userSubmissions.forEach(submission => {
+        userSubmissions.forEach((submission) => {
           const { testId } = submission;
           if (
             !latestSubmissions[testId] ||
@@ -104,18 +110,18 @@ export default function UserSubmissionsTable() {
             latestSubmissions[testId] = submission;
           }
         });
-  
+
         setSubmissions(Object.values(latestSubmissions));
       } catch (error) {
-        console.error('Error fetching submissions:', error);
+        console.error('[fetchUserSubmissions] Failed to fetch submissions:', error);
+        toast.error('Failed to load submissions. Please try again.');
       } finally {
         setLoading(false);
       }
     };
+
     fetchUserSubmissions();
   }, [user, authLoading]);
-
-
 
   const loadLeaderboard = async (submission: SubmissionResultWithId) => {
     setActiveSubmission(submission);
@@ -129,6 +135,7 @@ export default function UserSubmissionsTable() {
       );
 
       const leaderboardSnap = await getDocs(leaderboardQuery);
+
       const tempEntries: {
         userId: string;
         earnedPoints: number;
@@ -136,15 +143,22 @@ export default function UserSubmissionsTable() {
         createdAt: Timestamp;
       }[] = [];
 
-      leaderboardSnap.forEach(docSnap => {
+      leaderboardSnap.forEach((docSnap) => {
         const data = docSnap.data() as SubmissionResult;
-        const { userId, earnedPoints = 0, totalPoints = 0, createdAt } = data;
-        tempEntries.push({ userId, earnedPoints, totalPoints, createdAt });
+        if (data.userId && data.createdAt) {
+          tempEntries.push({
+            userId: data.userId,
+            earnedPoints: data.earnedPoints || 0,
+            totalPoints: data.totalPoints || 0,
+            createdAt: data.createdAt,
+          });
+        } else {
+          console.warn('[loadLeaderboard] Skipped malformed entry:', docSnap.id);
+        }
       });
 
       const bestEntries: Record<string, typeof tempEntries[0]> = {};
-
-      tempEntries.forEach(entry => {
+      for (const entry of tempEntries) {
         const currentBest = bestEntries[entry.userId];
         if (
           !currentBest ||
@@ -154,33 +168,32 @@ export default function UserSubmissionsTable() {
         ) {
           bestEntries[entry.userId] = entry;
         }
-      });
+      }
 
       const userIds = Object.keys(bestEntries);
-
-      const userDocsPromises = userIds.map(userId =>
-        getDoc(doc(db, 'users', userId)).then(docSnap => ({ userId, docSnap }))
+      const userDocsPromises = userIds.map((userId) =>
+        getDoc(doc(db, 'users', userId))
+          .then((docSnap) => ({ userId, docSnap }))
+          .catch((err) => {
+            console.warn(`[loadLeaderboard] Failed to get user ${userId}:`, err);
+            return { userId, docSnap: null };
+          })
       );
-      const userDocs = await Promise.all(userDocsPromises);
 
+      const userDocs = await Promise.all(userDocsPromises);
       const userNames: Record<string, string> = {};
 
-      userDocs.forEach(({ userId, docSnap }) => {
-        if (docSnap.exists()) {
+      for (const { userId, docSnap } of userDocs) {
+        if (docSnap?.exists()) {
           const userData = docSnap.data();
-          if (userData.displayName) {
-            userNames[userId] = userData.displayName;
-          } else if (userData.email) {
-            userNames[userId] = userData.email.split('@')[0];
-          } else {
-            userNames[userId] = userId.slice(0, 6);
-          }
+          userNames[userId] =
+            userData.displayName || userData.email?.split('@')[0] || userId.slice(0, 6);
         } else {
           userNames[userId] = userId.slice(0, 6);
         }
-      });
-      
-      const leaderboardArray: LeaderboardEntry[] = userIds.map(userId => ({
+      }
+
+      const leaderboardArray: LeaderboardEntry[] = userIds.map((userId) => ({
         userId,
         name: userNames[userId],
         earnedPoints: bestEntries[userId].earnedPoints,
@@ -189,29 +202,53 @@ export default function UserSubmissionsTable() {
       }));
 
       leaderboardArray.sort((a, b) => {
-        const pointsDiff = b.earnedPoints - a.earnedPoints;
-        if (pointsDiff !== 0) return pointsDiff;
-
-        const aCreatedAt = bestEntries[a.userId].createdAt.seconds;
-        const bCreatedAt = bestEntries[b.userId].createdAt.seconds;
-        return aCreatedAt - bCreatedAt;
+        const diff = b.earnedPoints - a.earnedPoints;
+        if (diff !== 0) return diff;
+        return (
+          bestEntries[a.userId].createdAt.seconds -
+          bestEntries[b.userId].createdAt.seconds
+        );
       });
 
-      leaderboardArray.forEach((entry, index) => {
-        entry.rank = index + 1;
+      leaderboardArray.forEach((entry, idx) => {
+        entry.rank = idx + 1;
       });
 
       setLeaderboard(leaderboardArray);
-      
     } catch (error) {
-      console.error('Error loading leaderboard:', error);
+      console.error('[loadLeaderboard] Failed to load leaderboard:', error);
+      toast.error('Failed to load leaderboard. Please try again.');
     } finally {
       setLeaderboardLoading(false);
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await logOut();
+      router.push('/coding-platform/sign-in');
+    } catch (error) {
+      console.error('[handleSignOut] Error signing out:', error);
+      toast.error('Failed to sign out. Please try again.');
+    }
+  };
+
   const formatDate = (timestamp: Timestamp): string => {
-    return new Date(timestamp.seconds * 1000).toLocaleDateString();
+    try {
+      return new Date(timestamp.seconds * 1000).toLocaleDateString();
+    } catch (err) {
+      console.warn('[formatDate] Invalid timestamp:', timestamp);
+      return 'Invalid date';
+    }
+  };
+
+  const getUserInitials = () => {
+    if (!user?.displayName) return 'U';
+    return user.displayName
+      .split(' ')
+      .map((name) => name[0])
+      .join('')
+      .toUpperCase();
   };
 
   if (authLoading || loading) {
@@ -219,33 +256,20 @@ export default function UserSubmissionsTable() {
   }
 
   if (!user) {
-    return <div className="p-4 text-center text-white">Please sign in to view your submissions.</div>;
+    return (
+      <div className="p-4 text-center text-white">
+        Please sign in to view your submissions.
+      </div>
+    );
   }
 
-  const handleSignOut = async () => {
-    try {
-      await logOut(); // Use the context's logOut function
-      router.push('/coding-platform/sign-in'); // Redirect where you want after logout
-    } catch (error) {
-      console.error('Error signing out:', error);
-      toast.error("Failed to sign out. Please try again.");
-    }
-  };
-  const getUserInitials = () => {
-    if (!user?.displayName) return 'U';
-    return user.displayName
-      .split(' ')
-      .map(name => name[0])
-      .join('')
-      .toUpperCase();
-  };
   return (
     <div className="p-6 bg-slate-900 min-h-screen font-sans text-slate-100">
       {/* Navigation Bar */}
       <nav className="p-4 mb-6 flex justify-between items-center bg-slate-800 rounded-lg shadow-lg">
         <div className="flex items-center gap-8">
           <Link href="/" className="font-bold text-2xl tracking-wide text-cyan-400 hover:text-cyan-300 transition">
-            QuizApp 
+            QuizApp
           </Link>
           <div className="hidden md:flex gap-6">
             {navLinks.map((link) => (
@@ -260,37 +284,37 @@ export default function UserSubmissionsTable() {
           </div>
         </div>
 
-        {!loading && user && (
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8 border border-slate-600">
-                <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
-                <AvatarFallback className="bg-cyan-700 text-slate-100">
-                  {getUserInitials()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-slate-100">{user.displayName || 'User'}</span>
-                <span className="text-xs text-slate-300">{user.email}</span>
-              </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8 border border-slate-600">
+              <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
+              <AvatarFallback className="bg-cyan-700 text-slate-100">
+                {getUserInitials()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-slate-100">{user.displayName || 'User'}</span>
+              <span className="text-xs text-slate-300">{user.email}</span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSignOut}
-              className="bg-slate-700 text-slate-100 border border-slate-600 hover:bg-slate-600 hover:text-white"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
           </div>
-        )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSignOut}
+            className="bg-slate-700 text-slate-100 border border-slate-600 hover:bg-slate-600 hover:text-white"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign Out
+          </Button>
+        </div>
       </nav>
-  
+
       {/* Main Content */}
       {submissions.length === 0 ? (
         <div className="bg-slate-800 p-8 rounded-lg shadow-lg">
-          <p className="text-center text-slate-300 text-lg">You haven&apos;t submitted any tests yet.</p>
+          <p className="text-center text-slate-300 text-lg">
+            You haven&apos;t submitted any tests yet.
+          </p>
         </div>
       ) : (
         <div className="overflow-x-auto bg-slate-800 p-4 rounded-lg shadow-lg">
@@ -308,7 +332,10 @@ export default function UserSubmissionsTable() {
             </thead>
             <tbody>
               {submissions.map((submission) => (
-                <tr key={submission.id} className="border-t border-slate-700 hover:bg-slate-700 transition-colors">
+                <tr
+                  key={submission.id}
+                  className="border-t border-slate-700 hover:bg-slate-700 transition-colors"
+                >
                   <td className="px-4 py-3 font-medium text-white">{submission.testTitle}</td>
                   <td className="px-4 py-3 truncate max-w-[250px] text-slate-300">{submission.testDescription}</td>
                   <td className="px-2 py-3 text-center text-slate-300">{submission.testDuration} min</td>
@@ -342,7 +369,7 @@ export default function UserSubmissionsTable() {
                         <DialogTitle className="text-lg font-semibold text-center mb-4 text-cyan-300">
                           🏆 Leaderboard
                         </DialogTitle>
-    
+
                         {leaderboard === null ? (
                           <div className="flex justify-center py-6">
                             <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
@@ -361,7 +388,7 @@ export default function UserSubmissionsTable() {
                               </tr>
                             </thead>
                             <tbody>
-                              {leaderboard.map(entry => (
+                              {leaderboard.map((entry) => (
                                 <tr
                                   key={entry.userId}
                                   className={
