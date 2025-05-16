@@ -236,8 +236,9 @@ export default function UserSubmissionsTable() {
   const formatDate = (timestamp: Timestamp): string => {
     try {
       return new Date(timestamp.seconds * 1000).toLocaleDateString();
-    } catch (err) {
+    } catch (e) {
       console.warn('[formatDate] Invalid timestamp:', timestamp);
+      console.log("error in formatdate:",e)
       return 'Invalid date';
     }
   };
