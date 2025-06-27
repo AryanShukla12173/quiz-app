@@ -68,7 +68,6 @@ export const LANGUAGES : LanguageInfo= [
     { value: "python", label: "Python", monacoId: "python", pistonLanguage: "python", pistonVersion: "3.10.0" },
     { value: "java", label: "Java", monacoId: "java", pistonLanguage: "java", pistonVersion: "15.0.2" },
     { value: "cpp", label: "C++", monacoId: "cpp", pistonLanguage: "c++", pistonVersion: "12.2.0" },
-    { value: "go", label: "Go", monacoId: "go", pistonLanguage: "go", pistonVersion: "1.19.2" },
   ]
 
 export const EDITOR_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
