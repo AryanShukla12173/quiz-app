@@ -1,36 +1,17 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Eye, EyeOff, Code2 } from "lucide-react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { Eye, EyeOff, Code2, AlertCircle } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { useRouter } from 'next/navigation'
+import { useAuth, UserRole } from '@/context/AuthContext'
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { AlertCircle } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useRouter } from "next/navigation"
-import { useAuth, UserRole } from "@/context/AuthContext"
-
-// Enhanced validation schema
 const formSchema = z.object({
-  email: z
-    .string()
-    .min(1, { message: "Email is required" })
-    .email({ message: "Please enter a valid email address" })
-    .max(254, { message: "Email cannot exceed 254 characters" })
-    .refine(email => !email.endsWith('.con'), {
-      message: "Did you mean .com instead of .con?"
-    }),
-  password: z
-    .string()
-    .min(1, { message: "Password is required" })
-    .min(6, { message: "Password must be at least 6 characters" })
-    .max(128, { message: "Password cannot exceed 128 characters" }),
+  email: z.string().min(1, { message: 'Email is required' }).email(),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -39,18 +20,18 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
-  
-  // Use the auth context
   const { signIn, error: authError, loading: isLoading, clearError } = useAuth()
 
-  // Initialize form with React Hook Form and Zod resolver
-  const form = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: '',
+      password: '',
     },
-    mode: "onBlur", // Validate on blur for better UX
   })
 
   useEffect(() => {
@@ -58,133 +39,113 @@ export default function LoginForm() {
   }, [])
 
   const onSubmit = async (data: FormValues) => {
-    clearError() // Clear any previous errors
-    await signIn(data.email, data.password , UserRole.quiz_app_user)
-    // The auth context will handle the redirect in the ProtectedRoute component
-    // But we can also force navigation here if needed
+    clearError()
+    await signIn(data.email, data.password, UserRole.quiz_app_user)
     router.push('/coding-platform/start')
   }
 
-  // Only render the form after the component has mounted
-  if (!mounted) return null;
+  if (!mounted) return null
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-violet-500 via-violet-600 to-violet-700 bg-opacity-50 p-6">
-      <Card className="shadow-xl bg-white glassmorphism w-full max-w-sm rounded-lg animate-fade-in">
-        <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-2">
-            <div className="h-12 w-12 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-              <Code2 className="h-6 w-6 text-violet-600 dark:text-violet-300" />
+    <div className="min-h-screen flex items-center justify-center bg-base-200 p-4 font-sans">
+      <div className="card w-full max-w-md bg-base-100 shadow-2xl border border-base-300">
+        <div className="card-body space-y-6">
+          {/* Header */}
+          <div className="flex flex-col items-center">
+            <div className="bg-primary/10 p-3 rounded-full mb-2">
+              <Code2 className="h-6 w-6 text-primary" />
             </div>
+            <h2 className="text-2xl font-bold text-primary-content">CodeTest</h2>
+            <p className="text-sm text-base-content/70 text-center">
+              Enter your credentials to sign in
+            </p>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">CodeTest</CardTitle>
-          <CardDescription className="text-center">Enter your credentials to access your account</CardDescription>
-        </CardHeader>
-        <CardContent>
+
+          {/* Error Alert */}
           {authError && (
-            <Alert variant="destructive" className="mb-4 border-red-500/50 bg-red-500/10">
+            <div className="alert alert-error bg-error/10 text-error border-error text-sm">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{authError}</AlertDescription>
-            </Alert>
+              <span>{authError}</span>
+            </div>
           )}
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="email"
-                        placeholder="name@example.com"
-                        className="border-muted-foreground/20"
-                        autoComplete="email"
-                        disabled={isLoading}
-                        aria-invalid={!!form.formState.errors.email}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs text-red-500" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Password</FormLabel>
-                      <Link
-                        href="/coding-platform/forgot-password"
-                        className="text-sm text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
-                      >
-                        Forgot password?
-                      </Link>
-                    </div>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          {...field}
-                          type={showPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          className="pr-10 border-muted-foreground/20"
-                          autoComplete="current-password"
-                          disabled={isLoading}
-                          aria-invalid={!!form.formState.errors.password}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          tabIndex={-1}
-                          aria-label={showPassword ? "Hide password" : "Show password"}
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </FormControl>
-                    <FormMessage className="text-xs text-red-500" />
-                  </FormItem>
-                )}
-              />
-
-              <Button
-                type="submit"
-                className="w-full bg-violet-600 hover:bg-violet-700 text-white"
+          {/* Form */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Email Field */}
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text font-semibold">Email</span>
+              </label>
+              <input
+                {...register('email')}
+                type="email"
+                placeholder="name@example.com"
+                className="input input-bordered w-full"
                 disabled={isLoading}
-                aria-busy={isLoading}
-              >
-                {isLoading ? "Signing in..." : "Sign in"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <div className="text-center text-sm mt-2">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/coding-platform/sign-up"
-              className="text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 font-medium"
+              />
+              {errors.email && (
+                <p className="text-error text-sm mt-1">{errors.email.message}</p>
+              )}
+            </div>
+
+            {/* Password Field with Toggle */}
+            <div className="form-control w-full">
+              <label className="label flex justify-between items-center">
+                <span className="label-text font-semibold">Password</span>
+                <Link
+                  href="/coding-platform/forgot-password"
+                  className="text-sm text-primary hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </label>
+              <div className="join w-full">
+                <input
+                  {...register('password')}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  className="input input-bordered join-item w-full"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="btn join-item btn-square"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-error text-sm mt-1">{errors.password.message}</p>
+              )}
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              className="btn btn-primary w-full"
+              disabled={isLoading}
             >
+              {isLoading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div className="text-sm text-center text-base-content">
+            Don&apos;t have an account?{' '}
+            <Link href="/coding-platform/sign-up" className="text-primary hover:underline">
               Sign up
             </Link>
-           
           </div>
-          <div className="text-center text-sm mt-2">
-            <Link
-              href="/"
-              className="text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 font-medium"
-            >
-              Home
+          <div className="text-sm text-center">
+            <Link href="/" className="text-primary hover:underline">
+              Return to Home
             </Link>
           </div>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

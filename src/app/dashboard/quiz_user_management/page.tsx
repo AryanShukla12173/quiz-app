@@ -1,106 +1,74 @@
-'use client'
+'use client';
 
-import React, { useEffect, useState } from 'react'
-import { db } from '@/lib/connectDatabase'
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore'
-import { QuizAppUserDocData } from '@/lib/types'
-import { UserRole } from '@/context/AuthContext'
+import React, { useEffect, useState } from 'react';
+import { db } from '@/lib/connectDatabase';
+import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { QuizAppUserDocData } from '@/lib/types';
+import { UserRole, useAuth } from '@/context/AuthContext';
+import { Pencil } from 'lucide-react';
+import { toast } from 'sonner';
 
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Pencil } from "lucide-react"
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
-import { toast } from 'sonner'
-import { useAuth } from '@/context/AuthContext'
+function QuizUserDashboard() {
+  const [adminUserData, setAdminUserData] = useState<QuizAppUserDocData[]>([]);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [, setLoadingUserId] = useState<string | null>(null);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const { role } = useAuth();
 
-
-function SuperAdminDashboard() {
-  const [adminUserData, setAdminUserData] = useState<QuizAppUserDocData[]>([])
-  const [editingUserId, setEditingUserId] = useState<string | null>(null)
-  const [, setLoadingUserId] = useState<string | null>(null)
-  const [totalUsers, setTotalUsers] = useState(0)
-  const { role } = useAuth()
+  useEffect(() => {
+    fetchAllAdminUserData();
+    fetchTotalUsers();
+  }, []);
 
   async function fetchAllAdminUserData() {
     try {
-      const querySnapShot = await getDocs(collection(db, 'user-profiles'))
-      const docs: QuizAppUserDocData[] = querySnapShot.docs
-        .filter(doc => {
-          const data = doc.data() as QuizAppUserDocData
-          return data.role === UserRole.quiz_app_user
-        })
-        .map(doc => {
-          const data = doc.data() as QuizAppUserDocData
-          return { id: doc.id, ...data }
-        })
-      setAdminUserData(docs)
-    } catch (error) {
-      console.error("Error in super-admin-dashboard: ", error)
+      const snapshot = await getDocs(collection(db, 'user-profiles'));
+      const users = snapshot.docs
+        .filter((doc) => (doc.data() as QuizAppUserDocData).role === UserRole.quiz_app_user)
+        .map((doc) => ({ id: doc.id, ...(doc.data() as QuizAppUserDocData) }));
+      setAdminUserData(users);
+    } catch (err) {
+      console.error('Error fetching users:', err);
     }
   }
 
   async function fetchTotalUsers() {
     try {
-      const snapshot = await getDocs(collection(db, 'user-profiles'))
-            let userCount = 0
-            snapshot.forEach(doc => {
-              const data = doc.data()
-              if (data.role === UserRole.quiz_app_user) {
-                userCount++
-              }
-            })
-            setTotalUsers(userCount)
-    } catch (error) {
-      console.error("Error fetching total users: ", error)
+      const snapshot = await getDocs(collection(db, 'user-profiles'));
+      const count = snapshot.docs.filter(
+        (doc) => (doc.data() as QuizAppUserDocData).role === UserRole.quiz_app_user
+      ).length;
+      setTotalUsers(count);
+    } catch (err) {
+      console.error('Error counting users:', err);
     }
   }
-
-  useEffect(() => {
-    fetchAllAdminUserData()
-    fetchTotalUsers()
-  }, [])
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
     try {
-      setLoadingUserId(userId)
-      const userRef = doc(db, 'user-profiles', userId)
-      await updateDoc(userRef, { role: newRole })
-      toast(`The user role has been successfully updated to ${newRole}`)
-      fetchAllAdminUserData()
+      setLoadingUserId(userId);
+      const userRef = doc(db, 'user-profiles', userId);
+      await updateDoc(userRef, { role: newRole });
+      toast.success(`Updated role to ${newRole}`);
+      fetchAllAdminUserData();
     } catch (error) {
-      toast("There was an error updating the role. Please try again.")
-      console.error("Error updating role: ", error)
+      toast.error('Error updating role.');
+      console.error(error);
     } finally {
-      setLoadingUserId(null)
+      setLoadingUserId(null);
     }
-  }
+  };
 
   return (
-    <div className="bg-[#f4f4f7] min-h-screen px-4 py-6 md:ml-[250px]">
-      {/* Stat Cards */}
-      <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-md p-6 flex justify-between items-center transition hover:shadow-lg">
-          <div className="space-y-1">
-            <p className="text-sm text-gray-500">Quiz App Users</p>
-            <p className="text-3xl font-bold text-gray-800">{totalUsers}</p>
+    <div className="p-6 min-h-screen bg-base-200">
+      {/* Stat Card */}
+      <div className="card bg-base-100 shadow-md rounded-xl mb-8 w-full max-w-xs transition hover:shadow-lg">
+        <div className="card-body flex-row items-center justify-between">
+          <div>
+            <p className="text-sm text-base-content/70">Quiz App Users</p>
+            <h2 className="text-3xl font-bold text-base-content">{totalUsers}</h2>
           </div>
-          <div className="bg-indigo-100 text-indigo-600 p-3 rounded-full">
+          <div className="bg-primary/10 text-primary p-3 rounded-full">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
               viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -110,86 +78,76 @@ function SuperAdminDashboard() {
         </div>
       </div>
 
-      {/* User Table */}
-      <div className="bg-white rounded-xl shadow-md p-4 md:p-6 overflow-x-auto">
-        <Table>
-          <TableCaption className="text-sm text-gray-500 mt-4">
-            A list of all quiz app users
-          </TableCaption>
-          <TableHeader>
-            <TableRow className="text-gray-600 whitespace-nowrap">
-              <TableHead>Email</TableHead>
-              <TableHead>Enrollment ID</TableHead>
-              <TableHead>Year</TableHead>
-              <TableHead>Branch</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead>Role</TableHead>
-              {role === UserRole.quiz_app_superadmin && (
-                <TableHead>Action</TableHead>
-              )}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      {/* Table */}
+      <div className="overflow-x-auto bg-base-100 p-4 rounded-box shadow">
+        <table className="table table-zebra w-full">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Enrollment ID</th>
+              <th>Year</th>
+              <th>Branch</th>
+              <th>Created At</th>
+              <th>Role</th>
+              {role === UserRole.quiz_app_superadmin && <th>Action</th>}
+            </tr>
+          </thead>
+          <tbody>
             {adminUserData.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.Enrollment_ID}</TableCell>
-                <TableCell>{user.Year}</TableCell>
-                <TableCell>{user.Branch}</TableCell>
-                <TableCell>
-                {user.createdAt
+              <tr key={user.id}>
+                <td>{user.email}</td>
+                <td>{user.Enrollment_ID}</td>
+                <td>{user.Year}</td>
+                <td>{user.Branch}</td>
+                <td>
+                  {user.createdAt
                     ? new Date(user.createdAt).toLocaleDateString()
                     : 'Invalid Date'}
-                </TableCell>
-                <TableCell>{user.role}</TableCell>
+                </td>
+                <td>{user.role}</td>
                 {role === UserRole.quiz_app_superadmin && (
-                  <TableCell>
+                  <td>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingUserId(user.id ?? '')}
-                          >
-                            <Pencil size={16} />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Edit User Role</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <button
+                        className="btn btn-sm btn-outline"
+                        onClick={() => setEditingUserId(user.id ?? '')}
+                        title="Edit Role"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
 
                       {editingUserId === user.id && (
-                        <Select
+                        <select
+                          className="select select-bordered select-sm w-[10rem]"
                           defaultValue={user.role}
-                          onValueChange={(newRole) =>
-                            handleRoleChange(user.id!, newRole as UserRole)
+                          onChange={(e) =>
+                            handleRoleChange(user.id!, e.target.value as UserRole)
                           }
                         >
-                          <SelectTrigger className="w-[140px] sm:w-[160px]">
-                            <SelectValue placeholder="Select Role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.values(UserRole).map((roleOption) => (
-                              <SelectItem key={roleOption} value={roleOption}>
-                                {roleOption}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          <option disabled>Select Role</option>
+                          {Object.values(UserRole).map((roleOption) => (
+                            <option key={roleOption} value={roleOption}>
+                              {roleOption}
+                            </option>
+                          ))}
+                        </select>
                       )}
                     </div>
-                  </TableCell>
+                  </td>
                 )}
-              </TableRow>
+              </tr>
             ))}
-          </TableBody>
-          <TableFooter />
-        </Table>
+          </tbody>
+        </table>
+
+        {adminUserData.length === 0 && (
+          <div className="text-center text-sm text-gray-500 mt-4">
+            No users found.
+          </div>
+        )}
       </div>
     </div>
-  )
+  );
 }
 
-export default SuperAdminDashboard
+export default QuizUserDashboard;

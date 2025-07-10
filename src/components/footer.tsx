@@ -1,9 +1,13 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Github, Twitter, Facebook, Instagram, ArrowRight } from "lucide-react"
+import {
+  Github,
+  Twitter,
+  Facebook,
+  Instagram,
+  ArrowRight,
+} from "lucide-react"
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -30,203 +34,112 @@ export default function Footer() {
 
   return (
     <motion.footer
-      className="bg-gradient-to-br from-violet-900 to-purple-900 text-white py-12 border-t border-violet-800"
+      className="bg-base-200 text-base-content border-t border-base-300"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       variants={footerVariants}
     >
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-          <motion.div variants={itemVariants} className="space-y-4">
-            <h3 className="text-lg font-bold">QuizApp</h3>
-            <p className="text-violet-200">Making learning fun and engaging through interactive quizzes.</p>
-            <div className="flex space-x-4">
-              <motion.a
-                href="#"
-                className="text-violet-200 hover:text-white transition-colors"
-                whileHover={{ scale: 1.2, rotate: 5 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <Twitter className="h-5 w-5" />
-                <span className="sr-only">Twitter</span>
-              </motion.a>
-              <motion.a
-                href="#"
-                className="text-violet-200 hover:text-white transition-colors"
-                whileHover={{ scale: 1.2, rotate: 5 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <Facebook className="h-5 w-5" />
-                <span className="sr-only">Facebook</span>
-              </motion.a>
-              <motion.a
-                href="#"
-                className="text-violet-200 hover:text-white transition-colors"
-                whileHover={{ scale: 1.2, rotate: 5 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <Instagram className="h-5 w-5" />
-                <span className="sr-only">Instagram</span>
-              </motion.a>
-              <motion.a
-                href="#"
-                className="text-violet-200 hover:text-white transition-colors"
-                whileHover={{ scale: 1.2, rotate: 5 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <Github className="h-5 w-5" />
-                <span className="sr-only">GitHub</span>
-              </motion.a>
+      <div className="container max-w-screen-xl mx-auto px-4 py-10">
+        <div className="footer sm:footer-horizontal">
+          {/* Section 1 - Branding */}
+          <motion.div variants={itemVariants}>
+            <span className="footer-title text-primary">QuizApp</span>
+            <p className="max-w-xs text-sm opacity-70">
+              Making learning fun and engaging through interactive quizzes.
+            </p>
+            <div className="flex space-x-3 mt-4">
+              {[Twitter, Facebook, Instagram, Github].map((Icon, i) => (
+                <motion.a
+                  key={i}
+                  href="#"
+                  whileHover={{ scale: 1.2, rotate: 5 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="text-base-content/60 hover:text-primary"
+                >
+                  <Icon className="w-5 h-5" />
+                </motion.a>
+              ))}
             </div>
           </motion.div>
 
-          <motion.div variants={itemVariants} className="space-y-4">
-            <h3 className="text-lg font-bold">Product</h3>
-            <ul className="space-y-2">
-              <li>
-                <motion.a
-                  href="#"
-                  className="text-violet-200 hover:text-white transition-colors block"
-                  whileHover={{ x: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  Features
-                </motion.a>
-              </li>
-              <li>
-                <motion.a
-                  href="#"
-                  className="text-violet-200 hover:text-white transition-colors block"
-                  whileHover={{ x: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  Pricing
-                </motion.a>
-              </li>
-              <li>
-                <motion.a
-                  href="#"
-                  className="text-violet-200 hover:text-white transition-colors block"
-                  whileHover={{ x: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  Testimonials
-                </motion.a>
-              </li>
-              <li>
-                <motion.a
-                  href="#"
-                  className="text-violet-200 hover:text-white transition-colors block"
-                  whileHover={{ x: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  FAQ
-                </motion.a>
-              </li>
-            </ul>
-          </motion.div>
-
-          <motion.div variants={itemVariants} className="space-y-4">
-            <h3 className="text-lg font-bold">Company</h3>
-            <ul className="space-y-2">
-              <li>
-                <motion.a
-                  href="#"
-                  className="text-violet-200 hover:text-white transition-colors block"
-                  whileHover={{ x: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  About Us
-                </motion.a>
-              </li>
-              <li>
-                <motion.a
-                  href="#"
-                  className="text-violet-200 hover:text-white transition-colors block"
-                  whileHover={{ x: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  Careers
-                </motion.a>
-              </li>
-              <li>
-                <motion.a
-                  href="#"
-                  className="text-violet-200 hover:text-white transition-colors block"
-                  whileHover={{ x: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  Blog
-                </motion.a>
-              </li>
-              <li>
-                <motion.a
-                  href="#"
-                  className="text-violet-200 hover:text-white transition-colors block"
-                  whileHover={{ x: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  Contact
-                </motion.a>
-              </li>
-            </ul>
-          </motion.div>
-
-          <motion.div variants={itemVariants} className="space-y-4">
-            <h3 className="text-lg font-bold">Subscribe</h3>
-            <p className="text-violet-200">Stay updated with our latest features and releases.</p>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter your email"
-                type="email"
-                className="max-w-[220px] bg-violet-800/50 border-violet-700 text-white placeholder:text-violet-300"
-              />
-              <motion.div
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                whileTap={{ scale: 0.9 }}
+          {/* Section 2 - Product */}
+          <motion.div variants={itemVariants}>
+            <span className="footer-title text-primary">Product</span>
+            {["Features", "Pricing", "Testimonials", "FAQ"].map((label, i) => (
+              <motion.a
+                key={i}
+                href="#"
+                whileHover={{ x: 5 }}
+                className="link link-hover text-base-content/70 hover:text-primary transition-colors"
               >
-                <Button
-                  size="icon"
-                  className="bg-white text-violet-800 hover:bg-violet-100"
+                {label}
+              </motion.a>
+            ))}
+          </motion.div>
+
+          {/* Section 3 - Company */}
+          <motion.div variants={itemVariants}>
+            <span className="footer-title text-primary">Company</span>
+            {["About Us", "Careers", "Blog", "Contact"].map((label, i) => (
+              <motion.a
+                key={i}
+                href="#"
+                whileHover={{ x: 5 }}
+                className="link link-hover text-base-content/70 hover:text-primary transition-colors"
+              >
+                {label}
+              </motion.a>
+            ))}
+          </motion.div>
+
+          {/* Section 4 - Newsletter */}
+          <motion.div variants={itemVariants}>
+            <span className="footer-title text-primary">Subscribe</span>
+            <p className="text-sm text-base-content/70 mb-2">
+              Stay updated with our latest features and releases.
+            </p>
+            <form className="form-control w-72">
+              <div className="join">
+                <input
+                  type="email"
+                  placeholder="Enter email"
+                  className="input input-bordered join-item w-full text-sm"
+                />
+                <motion.div
+                  className="join-item"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  whileTap={{ scale: 0.9 }}
                 >
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </motion.div>
-            </div>
+                  <button
+                    type="submit"
+                    className="btn btn-primary rounded-l-none"
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </motion.div>
+              </div>
+            </form>
           </motion.div>
         </div>
 
+        {/* Divider */}
         <motion.div
+          className="mt-10 border-t border-base-300 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-base-content/60"
           variants={itemVariants}
-          className="pt-8 border-t border-violet-800 flex flex-col md:flex-row justify-between items-center gap-4"
         >
-          <p className="text-sm text-violet-300">© {currentYear} QuizApp. All rights reserved.</p>
-          <div className="flex gap-6">
-            <motion.a
-              href="#"
-              className="text-sm text-violet-300 hover:text-white transition-colors"
-              whileHover={{ y: -2 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
-            >
-              Privacy Policy
-            </motion.a>
-            <motion.a
-              href="#"
-              className="text-sm text-violet-300 hover:text-white transition-colors"
-              whileHover={{ y: -2 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
-            >
-              Terms of Service
-            </motion.a>
-            <motion.a
-              href="#"
-              className="text-sm text-violet-300 hover:text-white transition-colors"
-              whileHover={{ y: -2 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
-            >
-              Cookies
-            </motion.a>
+          <p>© {currentYear} QuizApp. All rights reserved.</p>
+          <div className="flex gap-4">
+            {["Privacy Policy", "Terms of Service", "Cookies"].map((label, i) => (
+              <motion.a
+                key={i}
+                href="#"
+                whileHover={{ y: -2 }}
+                className="hover:text-primary transition"
+              >
+                {label}
+              </motion.a>
+            ))}
           </div>
         </motion.div>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/connectDatabase';
 import { useRouter } from 'next/navigation';
@@ -14,18 +14,10 @@ import {
   getDoc,
   Timestamp,
 } from 'firebase/firestore';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import LoadingScreen from '@/components/LoadingScreen';
 import { Loader2, LogOut } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export type SubmissionResult = {
   userId: string;
@@ -62,18 +54,18 @@ type LeaderboardEntry = {
   rank: number;
 };
 
-const navLinks = [
-  { name: 'Home', href: '/coding-platform/start' },
-];
+const navLinks = [{ name: 'Home', href: '/coding-platform/start' }];
 
 export default function UserSubmissionsTable() {
   const { user, loading: authLoading, logOut } = useAuth();
   const [submissions, setSubmissions] = useState<SubmissionResultWithId[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[] | null>(null);
-  const [, setActiveSubmission] = useState<SubmissionResultWithId | null>(null);
   const [loading, setLoading] = useState(true);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const leaderboardDialogRef = useRef<HTMLDialogElement>(null);
   const router = useRouter();
+  const [, setActiveSubmission] =
+    useState<SubmissionResultWithId | null>(null);
 
   useEffect(() => {
     if (!user || authLoading) return;
@@ -81,13 +73,11 @@ export default function UserSubmissionsTable() {
     const fetchUserSubmissions = async () => {
       try {
         setLoading(true);
-
         const submissionsQuery = query(
           collection(db, 'codeTestsubmissions'),
           where('userId', '==', user.uid),
           orderBy('createdAt', 'desc')
         );
-
         const submissionsSnap = await getDocs(submissionsQuery);
 
         if (submissionsSnap.empty) {
@@ -113,8 +103,8 @@ export default function UserSubmissionsTable() {
 
         setSubmissions(Object.values(latestSubmissions));
       } catch (error) {
-        console.error('[fetchUserSubmissions] Failed to fetch submissions:', error);
-        toast.error('Failed to load submissions. Please try again.');
+        console.error('[fetchUserSubmissions]', error);
+        toast.error('Failed to load submissions.');
       } finally {
         setLoading(false);
       }
@@ -124,18 +114,16 @@ export default function UserSubmissionsTable() {
   }, [user, authLoading]);
 
   const loadLeaderboard = async (submission: SubmissionResultWithId) => {
-    setActiveSubmission(submission);
-    setLeaderboard(null);
     setLeaderboardLoading(true);
+    setLeaderboard(null);
+    setActiveSubmission(submission);
 
     try {
       const leaderboardQuery = query(
         collection(db, 'codeTestsubmissions'),
         where('testId', '==', submission.testId)
       );
-
       const leaderboardSnap = await getDocs(leaderboardQuery);
-
       const tempEntries: {
         userId: string;
         earnedPoints: number;
@@ -152,8 +140,6 @@ export default function UserSubmissionsTable() {
             totalPoints: data.totalPoints || 0,
             createdAt: data.createdAt,
           });
-        } else {
-          console.warn('[loadLeaderboard] Skipped malformed entry:', docSnap.id);
         }
       });
 
@@ -171,23 +157,20 @@ export default function UserSubmissionsTable() {
       }
 
       const userIds = Object.keys(bestEntries);
-      const userDocsPromises = userIds.map((userId) =>
-        getDoc(doc(db, 'users', userId))
-          .then((docSnap) => ({ userId, docSnap }))
-          .catch((err) => {
-            console.warn(`[loadLeaderboard] Failed to get user ${userId}:`, err);
-            return { userId, docSnap: null };
-          })
+      const userDocs = await Promise.all(
+        userIds.map((userId) =>
+          getDoc(doc(db, 'users', userId))
+            .then((docSnap) => ({ userId, docSnap }))
+            .catch(() => ({ userId, docSnap: null }))
+        )
       );
 
-      const userDocs = await Promise.all(userDocsPromises);
       const userNames: Record<string, string> = {};
-
       for (const { userId, docSnap } of userDocs) {
         if (docSnap?.exists()) {
-          const userData = docSnap.data();
+          const data = docSnap.data();
           userNames[userId] =
-            userData.displayName || userData.email?.split('@')[0] || userId.slice(0, 6);
+            data.displayName || data.email?.split('@')[0] || userId.slice(0, 6);
         } else {
           userNames[userId] = userId.slice(0, 6);
         }
@@ -205,8 +188,7 @@ export default function UserSubmissionsTable() {
         const diff = b.earnedPoints - a.earnedPoints;
         if (diff !== 0) return diff;
         return (
-          bestEntries[a.userId].createdAt.seconds -
-          bestEntries[b.userId].createdAt.seconds
+          bestEntries[a.userId].createdAt.seconds - bestEntries[b.userId].createdAt.seconds
         );
       });
 
@@ -215,9 +197,10 @@ export default function UserSubmissionsTable() {
       });
 
       setLeaderboard(leaderboardArray);
+      leaderboardDialogRef.current?.showModal();
     } catch (error) {
-      console.error('[loadLeaderboard] Failed to load leaderboard:', error);
-      toast.error('Failed to load leaderboard. Please try again.');
+      console.error('[loadLeaderboard]', error);
+      toast.error('Failed to load leaderboard.');
     } finally {
       setLeaderboardLoading(false);
     }
@@ -228,188 +211,104 @@ export default function UserSubmissionsTable() {
       await logOut();
       router.push('/coding-platform/sign-in');
     } catch (error) {
-      console.error('[handleSignOut] Error signing out:', error);
-      toast.error('Failed to sign out. Please try again.');
+      toast.error(`Failed to sign out.${error}`);
+
     }
   };
 
   const formatDate = (timestamp: Timestamp): string => {
     try {
       return new Date(timestamp.seconds * 1000).toLocaleDateString();
-    } catch (e) {
-      console.warn('[formatDate] Invalid timestamp:', timestamp);
-      console.log("error in formatdate:",e)
+    } catch {
       return 'Invalid date';
     }
   };
 
-  const getUserInitials = () => {
-    if (!user?.displayName) return 'U';
-    return user.displayName
-      .split(' ')
-      .map((name) => name[0])
+  const getUserInitials = () =>
+    user?.displayName
+      ?.split(' ')
+      .map((n) => n[0])
       .join('')
-      .toUpperCase();
-  };
+      .toUpperCase() || 'U';
 
   if (authLoading || loading) {
     return <LoadingScreen message="Loading your submissions..." />;
   }
 
   if (!user) {
-    return (
-      <div className="p-4 text-center text-white">
-        Please sign in to view your submissions.
-      </div>
-    );
+    return <div className="p-4 text-center text-white">Please sign in.</div>;
   }
 
   return (
-    <div className="p-6 bg-slate-900 min-h-screen font-sans text-slate-100">
-      {/* Navigation Bar */}
-      <nav className="p-4 mb-6 flex justify-between items-center bg-slate-800 rounded-lg shadow-lg">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="font-bold text-2xl tracking-wide text-cyan-400 hover:text-cyan-300 transition">
-            QuizApp
-          </Link>
-          <div className="hidden md:flex gap-6">
+    <div className="p-6 bg-base-100 min-h-screen text-base-content">
+      {/* Navbar */}
+      <div className="navbar bg-base-200 rounded-lg shadow mb-6">
+        <div className="navbar-center  flex-1">
+          <Link href="/" className="btn btn-ghost text-xl text-primary">QuizApp</Link>
+          <div className="  hidden md:flex ml-6 gap-4">
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="relative text-sm text-slate-200 hover:text-cyan-300 transition after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-0 hover:after:w-full after:bg-cyan-500 after:transition-all"
-              >
+              <Link key={link.href} href={link.href} className="link link-hover text-sm">
                 {link.name}
               </Link>
             ))}
           </div>
         </div>
-
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8 border border-slate-600">
-              <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
-              <AvatarFallback className="bg-cyan-700 text-slate-100">
-                {getUserInitials()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-slate-100">{user.displayName || 'User'}</span>
-              <span className="text-xs text-slate-300">{user.email}</span>
+          <div className="avatar placeholder">
+            <div className="bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center">
+              <span className="text-xs ml-2">{getUserInitials()}</span>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSignOut}
-            className="bg-slate-700 text-slate-100 border border-slate-600 hover:bg-slate-600 hover:text-white"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
+          <div className="text-sm">
+            <div>{user.displayName || 'User'}</div>
+            <div className="text-xs text-gray-400">{user.email}</div>
+          </div>
+          <button className="btn btn-sm btn-outline" onClick={handleSignOut}>
+            <LogOut className="w-4 h-4 mr-1" /> Sign Out
+          </button>
         </div>
-      </nav>
+      </div>
 
-      {/* Main Content */}
+      {/* Submissions Table */}
       {submissions.length === 0 ? (
-        <div className="bg-slate-800 p-8 rounded-lg shadow-lg">
-          <p className="text-center text-slate-300 text-lg">
-            You haven&apos;t submitted any tests yet.
-          </p>
+        <div className="bg-base-200 p-8 rounded-lg shadow text-center">
+          <p>You haven&apos;t submitted any tests yet.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto bg-slate-800 p-4 rounded-lg shadow-lg">
-          <table className="min-w-full text-sm rounded-md overflow-hidden">
-            <thead className="bg-slate-700 text-slate-200">
+        <div className="overflow-x-auto bg-base-200 p-4 rounded-lg shadow">
+          <table className="table table-sm">
+            <thead>
               <tr>
-                <th className="px-4 py-3 text-left font-medium">Test Title</th>
-                <th className="px-4 py-3 text-left font-medium">Description</th>
-                <th className="px-2 py-3 text-center font-medium">Duration</th>
-                <th className="px-2 py-3 text-center font-medium">Score</th>
-                <th className="px-2 py-3 text-center font-medium">Challenges</th>
-                <th className="px-2 py-3 text-center font-medium">Submitted</th>
-                <th className="px-2 py-3 text-center font-medium">Leaderboard</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th className="text-center">Duration</th>
+                <th className="text-center">Score</th>
+                <th className="text-center">Challenges</th>
+                <th className="text-center">Submitted</th>
+                <th className="text-center">Leaderboard</th>
               </tr>
             </thead>
             <tbody>
               {submissions.map((submission) => (
-                <tr
-                  key={submission.id}
-                  className="border-t border-slate-700 hover:bg-slate-700 transition-colors"
-                >
-                  <td className="px-4 py-3 font-medium text-white">{submission.testTitle}</td>
-                  <td className="px-4 py-3 truncate max-w-[250px] text-slate-300">{submission.testDescription}</td>
-                  <td className="px-2 py-3 text-center text-slate-300">{submission.testDuration} min</td>
-                  <td className="px-2 py-3 text-center text-emerald-400 font-semibold">
+                <tr key={submission.id}>
+                  <td>{submission.testTitle}</td>
+                  <td className="max-w-xs truncate">{submission.testDescription}</td>
+                  <td className="text-center">{submission.testDuration} min</td>
+                  <td className="text-center text-success font-semibold">
                     {submission.earnedPoints} / {submission.totalPoints}
                   </td>
-                  <td className="px-2 py-3 text-center text-slate-300">
+                  <td className="text-center">
                     {submission.noOfChallengesAttempted} / {submission.challenges.length}
                   </td>
-                  <td className="px-2 py-3 text-center text-slate-400">
-                    {formatDate(submission.createdAt)}
-                  </td>
-                  <td className="px-2 py-3 text-center">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="bg-cyan-700 text-white border-none hover:bg-cyan-600"
-                          onClick={() => loadLeaderboard(submission)}
-                          disabled={leaderboardLoading}
-                        >
-                          {leaderboardLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            'View'
-                          )}
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-md bg-slate-800 rounded-xl border border-slate-700 shadow-lg">
-                        <DialogTitle className="text-lg font-semibold text-center mb-4 text-cyan-300">
-                          🏆 Leaderboard
-                        </DialogTitle>
-
-                        {leaderboard === null ? (
-                          <div className="flex justify-center py-6">
-                            <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
-                          </div>
-                        ) : leaderboard.length === 0 ? (
-                          <div className="text-center py-6 text-slate-400">
-                            No leaderboard data available.
-                          </div>
-                        ) : (
-                          <table className="w-full text-xs border border-slate-700 rounded-md overflow-hidden">
-                            <thead className="bg-slate-700 text-slate-200">
-                              <tr>
-                                <th className="px-2 py-2 font-medium">Rank</th>
-                                <th className="px-2 py-2 font-medium">User</th>
-                                <th className="px-2 py-2 font-medium">Score</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {leaderboard.map((entry) => (
-                                <tr
-                                  key={entry.userId}
-                                  className={
-                                    entry.userId === user.uid
-                                      ? 'bg-cyan-900 font-semibold text-cyan-100'
-                                      : 'hover:bg-slate-700 text-slate-200'
-                                  }
-                                >
-                                  <td className="px-2 py-2 text-center">{entry.rank}</td>
-                                  <td className="px-2 py-2">{entry.name}</td>
-                                  <td className="px-2 py-2 text-center">
-                                    {entry.earnedPoints} / {entry.totalPoints}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
-                      </DialogContent>
-                    </Dialog>
+                  <td className="text-center">{formatDate(submission.createdAt)}</td>
+                  <td className="text-center">
+                    <button
+                      onClick={() => loadLeaderboard(submission)}
+                      className="btn btn-xs btn-primary"
+                      disabled={leaderboardLoading}
+                    >
+                      {leaderboardLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'View'}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -417,6 +316,53 @@ export default function UserSubmissionsTable() {
           </table>
         </div>
       )}
+
+      {/* Leaderboard Dialog */}
+      <dialog ref={leaderboardDialogRef} className="modal">
+        <div className="modal-box bg-base-200">
+          <h3 className="font-bold text-lg text-primary mb-2">🏆 Leaderboard</h3>
+          {leaderboard === null ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : leaderboard.length === 0 ? (
+            <p className="text-center text-gray-400">No leaderboard data available.</p>
+          ) : (
+            <table className="table table-xs mt-2">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>User</th>
+                  <th className="text-center">Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leaderboard.map((entry) => (
+                  <tr
+                    key={entry.userId}
+                    className={
+                      entry.userId === user.uid
+                        ? 'bg-primary text-primary-content font-semibold'
+                        : ''
+                    }
+                  >
+                    <td>{entry.rank}</td>
+                    <td>{entry.name}</td>
+                    <td className="text-center">
+                      {entry.earnedPoints} / {entry.totalPoints}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <div className="modal-action">
+            <form method="dialog">
+              <button className="btn btn-sm">Close</button>
+            </form>
+          </div>
+        </div>
+      </dialog>
     </div>
   );
 }

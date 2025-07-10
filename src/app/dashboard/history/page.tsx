@@ -1,158 +1,101 @@
 'use client';
+
 import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/connectDatabase';
 import { collection, getDocs, query, where, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useAuth, UserRole } from '@/context/AuthContext';
-import { 
-  Trash2, 
-  Edit, 
-  Copy, 
-  ChevronDown, 
-  ChevronUp, 
-  AlertTriangle 
+import {
+  Trash2, Edit, Copy, ChevronDown, ChevronUp, AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
-type ChallengesDocumentData = {
+type TestCase = {
+  description: string;
+  input: string;
+  expectedOutput: string;
+  hidden: boolean;
+};
+
+type Challenge = {
+  title: string;
+  description: string;
+  score: number;
+  testcases: TestCase[];
+  attempted?: boolean;
+};
+
+type ChallengeDoc = {
   id: string;
   userId: string;
   createdAt: Timestamp;
-  earnedPoints: number;
-  totalPoints: number;
-  testId: string;
   testTitle: string;
   testDescription: string;
   testDuration: number;
-  testStartTime: Timestamp;
-  testEndTime: Timestamp;
-  noOfChallengesAttempted: number;
-  challenges: {
-    title: string;
-    description: string;
-    attempted: boolean;
-    testcases: {
-      description: string;
-      input: string;
-      expectedOutput: string;
-      hidden: boolean;
-    }[];
-  }[];
-  createdBy?: string; // Optional field for creator info
+  testStartTime?: Timestamp;
+  testEndTime?: Timestamp;
+  challenges: Challenge[];
+  createdBy?: string;
 };
 
 function ChallengeHistory() {
-  const [challenges, setChallenges] = useState<ChallengesDocumentData[]>([]);
+  const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [challengeToDelete, setChallengeToDelete] = useState<string | null>(null);
-  const [expandedCard, setExpandedCard] = useState<string | null>(null);
-  
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const { user, role } = useAuth();
-  
   const isSuperAdmin = role === UserRole.quiz_app_superadmin;
-  
+
   useEffect(() => {
-    const fetchChallenges = async () => {
+    const fetch = async () => {
       setLoading(true);
-      setError(null);
-      
       try {
-        const challengeCollectionRef = collection(db, 'challenges');
-        let challengesQuery;
-        
-        // If superadmin, fetch all challenges; otherwise, fetch only the user's challenges
-        if (isSuperAdmin) {
-          challengesQuery = query(challengeCollectionRef);
-        } else {
-          // Regular admin can only see their own challenges
-          if (!user?.uid) {
-            throw new Error("User ID not available");
-          }
-          challengesQuery = query(challengeCollectionRef, where("userId", "==", user.uid));
-        }
-        
-        const snapshot = await getDocs(challengesQuery);
-        
-        if (snapshot.empty) {
-          setChallenges([]);
-          setLoading(false);
-          return;
-        }
-        
-        const challengesData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as ChallengesDocumentData[];
-        
-        setChallenges(challengesData);
-      } catch (error) {
-        console.error('Error fetching challenges: ', error);
-        setError('Failed to load challenges. Please try again later.');
+        const col = collection(db, 'challenges');
+        const q = isSuperAdmin ? query(col) : query(col, where('userId', '==', user?.uid || ''));
+        const snap = await getDocs(q);
+        setChallenges(
+          snap.docs.map(d => ({
+            id: d.id,
+            ...(d.data() as Omit<ChallengeDoc, 'id'>),
+          }))
+        );
+      } catch {
+        setError('Failed to load challenges.');
       } finally {
         setLoading(false);
       }
     };
-
-    fetchChallenges();
+    fetch();
   }, [user?.uid, isSuperAdmin]);
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text)
-      .then(() => {
-        toast.success('Shareable code copied!');
-      })
-      .catch((err) => {
-        console.error('Failed to copy: ', err);
-        toast.error('Failed to copy.');
-      });
-  };
-  
-  const handleDeleteClick = (challengeId: string) => {
-    setChallengeToDelete(challengeId);
-    setDeleteDialogOpen(true);
-  };
-  
   const handleDelete = async () => {
-    if (!challengeToDelete) return;
-    
+    if (!deleteId) return;
     try {
-      await deleteDoc(doc(db, 'challenges', challengeToDelete));
-      setChallenges(challenges.filter(challenge => challenge.id !== challengeToDelete));
-      toast.success('Challenge deleted successfully');
-    } catch (error) {
-      console.error('Error deleting challenge: ', error);
-      toast.error('Failed to delete challenge');
+      await deleteDoc(doc(db, 'challenges', deleteId));
+      setChallenges(prev => prev.filter(c => c.id !== deleteId));
+      toast.success('Challenge deleted');
+    } catch {
+      toast.error('Failed to delete');
     } finally {
-      setDeleteDialogOpen(false);
-      setChallengeToDelete(null);
+      setDeleteId(null);
     }
   };
-  
-  const toggleCardExpansion = (challengeId: string) => {
-    if (expandedCard === challengeId) {
-      setExpandedCard(null);
-    } else {
-      setExpandedCard(challengeId);
+
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Copied share code!');
+    } catch {
+      toast.error('Failed to copy');
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-700"></div>
+        <span className="loading loading-spinner loading-lg text-primary"></span>
       </div>
     );
   }
@@ -160,185 +103,163 @@ function ChallengeHistory() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-          <div className="flex items-center text-red-600 mb-4">
-            <AlertTriangle className="w-6 h-6 mr-2" />
-            <h2 className="text-xl font-bold">Error</h2>
-          </div>
-          <p className="text-gray-700">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            Try Again
-          </button>
+        <div className="alert alert-error shadow-lg w-full max-w-md">
+          <AlertTriangle className="w-5 h-5" />
+          <span>{error}</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-start p-6 min-h-screen bg-gray-50">
-      <div className="w-full max-w-7xl flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-purple-700">Challenge History</h1>
-        {isSuperAdmin && (
-          <div className="text-sm text-gray-500">
-            Viewing as Super Admin - All challenges visible
+    <div className="min-h-screen p-6 bg-base-100">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-primary">Challenge History</h1>
+          {isSuperAdmin && (
+            <span className="text-sm text-base-content/60">Viewing as Super Admin</span>
+          )}
+        </div>
+
+        {challenges.length === 0 ? (
+          <div className="card bg-base-200 p-6 shadow max-w-md mx-auto text-center">
+            <h2 className="text-xl font-semibold mb-2">No Challenges Found</h2>
+            <p className="mb-4">
+              {isSuperAdmin
+                ? 'There are no challenges in the system yet.'
+                : "You haven't created any challenges yet."}
+            </p>
+            <Link href="/dashboard/challenges" className="btn btn-primary btn-sm">
+              Create New Challenge
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {challenges.map((c) => {
+              const totalProblems = c.challenges.length;
+              const totalPoints = c.challenges.reduce((sum, ch) => sum + (ch.score || 0), 0);
+              const isOpen = expanded === c.id;
+
+              return (
+                <div
+                  key={c.id}
+                  className={`card border border-base-300 shadow-sm transition-all duration-200 ${
+                    isOpen ? 'sm:col-span-2' : ''
+                  }`}
+                >
+                  <div className="card-body space-y-3">
+                    <div className="flex justify-between items-start">
+                      <h2 className="card-title text-primary truncate" title={c.testTitle}>
+                        {c.testTitle}
+                      </h2>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => setExpanded(p => (p === c.id ? null : c.id))}
+                      >
+                        {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      </button>
+                    </div>
+
+                    <p className={`text-base-content/70 ${isOpen ? '' : 'line-clamp-2'}`}>
+                      {c.testDescription}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      <span className="badge badge-outline badge-primary text-xs">
+                        Duration: {c.testDuration || 0} min
+                      </span>
+                      <span className="badge badge-outline badge-success text-xs">
+                        Problems: {totalProblems}
+                      </span>
+                      <span className="badge badge-outline badge-info text-xs">
+                        Points: {totalPoints}
+                      </span>
+                    </div>
+
+                    {isOpen && (
+                      <div className="border-t pt-4 space-y-2">
+                        <h3 className="font-semibold text-base-content">Challenges</h3>
+                        <ul className="space-y-1 list-disc list-inside">
+                          {c.challenges.map((ch, idx) => (
+                            <li key={idx}>
+                              <span className="font-medium">{ch.title}</span>{' '}
+                              <span className="text-sm text-base-content/60">
+                                ({ch.score} pts)
+                              </span>
+                              <div className="text-sm text-base-content/60">{ch.description}</div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div className="text-sm text-base-content/60 space-y-1 pt-2 border-t">
+                      <div>
+                        <span className="font-medium">Share Code:</span>{' '}
+                        <span className="font-mono">{c.id}</span>
+                        <button
+                          className="btn btn-ghost btn-xs ml-2"
+                          onClick={() => handleCopy(c.id)}
+                        >
+                          <Copy size={16} />
+                        </button>
+                      </div>
+                      <div>
+                        <span className="font-medium">Created:</span>{' '}
+                        {c.createdAt?.toDate
+                          ? format(c.createdAt.toDate(), 'dd MMM yyyy, hh:mm a')
+                          : 'Unknown'}
+                      </div>
+                      {isSuperAdmin && c.userId && (
+                        <div>
+                          <span className="font-medium">Created By:</span> {c.userId}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t flex justify-end gap-2">
+                      <Link
+                        href={`/dashboard/challenges/edit-challenge/?testId=${c.id}`}
+                        className="btn btn-outline btn-sm"
+                      >
+                        <Edit size={16} />
+                      </Link>
+                      {isSuperAdmin && (
+                        <button
+                          onClick={() => setDeleteId(c.id)}
+                          className="btn btn-outline btn-sm btn-error"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
-      
-      {challenges.length === 0 ? (
-        <div className="bg-white p-8 rounded-lg shadow-md text-center w-full max-w-md">
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">No Challenges Found</h2>
-          <p className="text-gray-500 mb-6">
-            {isSuperAdmin 
-              ? "There are no challenges in the system yet." 
-              : "You haven't created any challenges yet."}
+
+      {/* Delete Confirmation Modal */}
+      <dialog id="delete_modal" className="modal" open={!!deleteId}>
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">Confirm Delete</h3>
+          <p className="py-2 text-base-content/70">
+            Are you sure you want to delete this challenge? This action cannot be undone.
           </p>
-          <Link href="/dashboard/challenges" className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
-            Create New Challenge
-          </Link>
+          <div className="modal-action">
+            <form method="dialog" className="space-x-2">
+              <button className="btn" onClick={() => setDeleteId(null)}>
+                Cancel
+              </button>
+              <button className="btn btn-error" onClick={handleDelete}>
+                Delete
+              </button>
+            </form>
+          </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full max-w-7xl">
-          {challenges.map((challenge) => {
-            // Safely calculate noOfChallengesAttempted if not present
-            const problemCount = challenge.noOfChallengesAttempted || challenge.challenges?.length || 0;
-            // Safely handle testDuration fallback
-            const testDuration = challenge.testDuration || 0;
-            const isExpanded = expandedCard === challenge.id;
-
-            return (
-              <div
-                key={challenge.id}
-                className={`bg-white rounded-xl shadow-md border border-purple-100 hover:shadow-lg transition-all ${
-                  isExpanded ? 'col-span-1 sm:col-span-2' : ''
-                }`}
-              >
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-3">
-                    <h2 className="text-xl font-bold text-purple-700 truncate" title={challenge.testTitle}>
-                      {challenge.testTitle}
-                    </h2>
-                    <button
-                      onClick={() => toggleCardExpansion(challenge.id)}
-                      className="text-gray-500 hover:text-purple-700"
-                    >
-                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                    </button>
-                  </div>
-                  
-                  <p className={`text-gray-600 mb-4 ${isExpanded ? '' : 'line-clamp-2'}`}>
-                    {challenge.testDescription}
-                  </p>
-
-                  {/* Badges for Stats */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <span className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full">
-                      Duration: {testDuration} min
-                    </span>
-                    <span className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full">
-                      Problems: {problemCount}
-                    </span>
-                    <span className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
-                      Points: {challenge.totalPoints || 0}
-                    </span>
-                  </div>
-
-                  {isExpanded && (
-                    <div className="border-t border-gray-100 pt-4 mb-4">
-                      <h3 className="font-semibold text-purple-600 mb-2">Challenges:</h3>
-                      <ul className="space-y-2 pl-4">
-                        {challenge.challenges?.map((item, idx) => (
-                          <li key={idx} className="text-gray-700">
-                            <span className="font-medium">{item.title}</span>
-                            {item.description && (
-                              <p className="text-sm text-gray-500 mt-1">{item.description}</p>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <div className="text-sm text-gray-500 space-y-2">
-                    <p className="flex items-center flex-wrap">
-                      <span className="font-semibold text-gray-700">Shareable Code:</span>&nbsp;
-                      <span className="text-purple-600 font-mono truncate">{challenge.id}</span>
-                      <button
-                        onClick={() => handleCopy(challenge.id)}
-                        className="ml-2 p-1 text-purple-500 hover:text-purple-700 transition-colors"
-                        title="Copy Code"
-                      >
-                        <Copy size={16} />
-                      </button>
-                    </p>
-                    <p>
-                      <span className="font-semibold text-gray-700">Created:</span>{' '}
-                      {challenge.createdAt?.toDate 
-                        ? format(challenge.createdAt.toDate(), 'dd MMM yyyy, hh:mm a')
-                        : 'Unknown date'}
-                    </p>
-                    
-                    {isSuperAdmin && challenge.userId && (
-                      <p>
-                        <span className="font-semibold text-gray-700">Created By:</span>{' '}
-                        <span className="text-gray-600">{challenge.userId}</span>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
-                    {/* All admins can edit their own challenges */}
-                    <Link
-                      href={`/dashboard/challenges/edit-challenge/?testId=${challenge.id}`}
-                      className="p-2 text-blue-500 hover:text-blue-700 transition-colors"
-                      title="Edit Challenge"
-                    >
-                      <Edit size={18} />
-                    </Link>
-                    
-                    {/* Only superadmins can delete challenges */}
-                    {isSuperAdmin && (
-                      <button
-                        onClick={() => handleDeleteClick(challenge.id)}
-                        className="p-2 text-red-500 hover:text-red-700 transition-colors"
-                        title="Delete Challenge"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-      
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this challenge?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the challenge
-              and all associated data.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 text-white hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      </dialog>
     </div>
   );
 }

@@ -10,32 +10,32 @@ export default function Features() {
 
   const features = [
     {
-      icon: <Brain className="h-10 w-10" />,
+      icon: <Brain className="h-8 w-8" />,
       title: "Coding Challenges",
       description: "Create custom coding challenges that can be shared through code.",
     },
     {
-      icon: <Users className="h-10 w-10" />,
-      title: "Quiz ",
+      icon: <Users className="h-8 w-8" />,
+      title: "Quiz",
       description: "Create custom Quizzes.",
     },
     {
-      icon: <BarChart className="h-10 w-10" />,
+      icon: <BarChart className="h-8 w-8" />,
       title: "Detailed Analytics",
       description: "Track your progress with comprehensive performance analytics and insights.",
     },
     {
-      icon: <Smartphone className="h-10 w-10" />,
+      icon: <Smartphone className="h-8 w-8" />,
       title: "Mobile Friendly",
       description: "Take quizzes on the go with our responsive mobile design.",
     },
     {
-      icon: <Clock className="h-10 w-10" />,
+      icon: <Clock className="h-8 w-8" />,
       title: "Timed Challenges",
       description: "Test your knowledge under pressure with timed quiz challenges.",
     },
     {
-      icon: <Shield className="h-10 w-10" />,
+      icon: <Shield className="h-8 w-8" />,
       title: "Secure Platform",
       description: "Your data and quiz content are always secure and private.",
     },
@@ -61,7 +61,7 @@ export default function Features() {
   }
 
   return (
-    <section id="features" className="py-20 bg-gradient-to-b from-white to-violet-50">
+    <section id="features" className="py-20 bg-base-100">
       <div className="container mx-auto px-4">
         <motion.div
           className="text-center mb-16 max-w-3xl mx-auto"
@@ -70,29 +70,29 @@ export default function Features() {
           transition={{ duration: 0.6 }}
           ref={ref}
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={isInView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="inline-block mb-4"
-          >
-            <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white px-4 py-1 rounded-full text-sm font-medium">
-              Powerful Features
-            </div>
-          </motion.div>
+          <div className="mb-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={isInView ? { opacity: 1, scale: 1 } : {}}
+              transition={{ duration: 0.5 }}
+              className="inline-block"
+            >
+              <div className="badge badge-accent badge-lg py-3 px-4 text-white">Powerful Features</div>
+            </motion.div>
+          </div>
           <motion.h2
-            className="text-3xl md:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-violet-700 to-purple-700"
+            className="text-4xl font-bold mb-4 text-primary"
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
           >
             Everything You Need
           </motion.h2>
           <motion.p
-            className="text-lg text-muted-foreground"
+            className="text-lg text-base-content/70"
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.4 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
           >
             Discover all the tools you need to create engaging quizzes and enhance your learning experience.
           </motion.p>
@@ -107,26 +107,20 @@ export default function Features() {
           {features.map((feature, index) => (
             <motion.div
               key={index}
-              className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border border-violet-100 group"
+              className="card bg-base-200 border border-base-300 shadow-sm hover:shadow-md transition-all group"
               variants={itemVariants}
               whileHover={{
                 y: -10,
                 boxShadow: "0 25px 50px -12px rgba(124, 58, 237, 0.25)",
               }}
             >
-              <motion.div
-                className="text-violet-600 mb-4 p-3 bg-violet-50 rounded-lg inline-block group-hover:bg-violet-100 transition-colors duration-300"
-                whileHover={{ rotate: [0, -10, 10, -10, 0] }}
-                transition={{ duration: 0.5 }}
-              >
-                {feature.icon}
-              </motion.div>
-              <h3 className="text-xl font-semibold mb-2 group-hover:text-violet-700 transition-colors duration-300">
-                {feature.title}
-              </h3>
-              <p className="text-muted-foreground group-hover:text-gray-700 transition-colors duration-300">
-                {feature.description}
-              </p>
+              <div className="card-body">
+                <div className="bg-primary/10 text-primary p-3 rounded-lg inline-block mb-4 group-hover:bg-primary/20 transition">
+                  {feature.icon}
+                </div>
+                <h3 className="card-title group-hover:text-primary">{feature.title}</h3>
+                <p className="text-base-content/70">{feature.description}</p>
+              </div>
             </motion.div>
           ))}
         </motion.div>
