@@ -44,7 +44,7 @@ export default function Hero() {
             </motion.span>
           </motion.h1>
 
-          <motion.p variants={itemVariants} className="text-lg text-neutral-content">
+          <motion.p variants={itemVariants} className="text-lg text-base-content">
             Create, share, and take quizzes on any topic. Perfect for students, teachers, and curious minds.
           </motion.p>
 
