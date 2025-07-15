@@ -683,7 +683,7 @@ function TestComponent() {
                                 ></textarea>
                                 <div className="mt-2">
                                     <h4 className="font-semibold">Output:</h4>
-                                    <pre className="bg-gray-100 p-2 rounded">{output}</pre>
+                                    <pre className="bg-gray-100 p-2 rounded text-black">{output}</pre>
                                 </div>
                                 <div className="flex space-x-2 mt-2">
                                     <button
@@ -710,7 +710,7 @@ function TestComponent() {
                                 {selectedChallengeId && testResults[selectedChallengeId] && (
                                     <div className="mt-4">
                                         <h3 className="text-lg font-semibold mb-2">Test Results</h3>
-                                        <div className="border border-gray-300 rounded p-2 bg-white">
+                                        <div className="border border-gray-300 rounded p-2 bg-white text-black">
                                             {allTestsPassed(selectedChallengeId) ? (
                                                 <div className="bg-green-100 p-2 mb-2 rounded flex items-center">
                                                     <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
