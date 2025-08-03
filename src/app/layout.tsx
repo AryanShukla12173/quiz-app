@@ -3,8 +3,8 @@ import { AuthProvider } from '@/context/AuthContext';
 import '@/app/globals.css'; // Tailwind styles, etc.
 
 export const metadata = {
-  title: 'Your App',
-  description: 'Description of your app',
+  title: 'Quiz App',
+  description: 'A platform for generating and ',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
