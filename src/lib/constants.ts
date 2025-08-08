@@ -1,0 +1,23 @@
+import { Brain, Users, BarChart, Smartphone, Clock, Shield } from "lucide-react"
+export const navItems =[
+    {
+        id : 1,
+        name : 'Admin Sign Up',
+        href : "/"
+    },
+     {
+        id : 2,
+        name : 'Admin Login',
+        href : "/"
+    },
+     {
+        id : 3,
+        name : 'Code Test Platform Sign Up',
+        href : "/"
+    },
+     {
+        id : 4,
+        name : 'Code Test Platform Sign In',
+        href : "/"
+    }
+]
