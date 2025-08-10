@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-export default function TestInfoFields({ control }: { control: any }) {
+export default function TestInfoFields({ control }: { control: undefined }) {
   return (
     <>
       <FormField

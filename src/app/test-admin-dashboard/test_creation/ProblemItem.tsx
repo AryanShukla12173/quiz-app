@@ -20,7 +20,7 @@ export default function ProblemItem({
   removeProblem,
 }: {
   problemIndex: number;
-  control: any;
+  control: undefined;
   removeProblem: () => void;
 }) {
   const {

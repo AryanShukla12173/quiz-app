@@ -16,7 +16,7 @@ export default function TestCaseList({
   testcases: { id: string }[];
   appendTestCase: () => void;
   removeTestCase: (index: number) => void;
-  control: any;
+  control: undefined;
 }) {
   return (
     <div className="mb-4">

@@ -19,7 +19,7 @@ export default function TestCaseItem({
 }: {
   problemIndex: number;
   testCaseIndex: number;
-  control: any;
+  control: undefined;
   removeTestCase: () => void;
 }) {
   return (

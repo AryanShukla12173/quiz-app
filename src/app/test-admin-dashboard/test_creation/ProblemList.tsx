@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import ProblemItem from "./ProblemItem";
 
-export default function ProblemList({ control }: { control: any }) {
+export default function ProblemList({ control }: { control: undefined }) {
   const {
     fields: problems,
     append: appendProblem,

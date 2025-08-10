@@ -41,7 +41,9 @@ function SignIn() {
       if(data.user){
         router.replace('/test-admin-dashboard')
       }
-    } catch (error) {}
+    } catch (error) {
+      console.log(error)
+    }
   };
 
   return (

@@ -1,4 +1,4 @@
-import { Brain, Users, BarChart, Smartphone, Clock, Shield } from "lucide-react"
+
 export const navItems =[
     {
         id : 1,

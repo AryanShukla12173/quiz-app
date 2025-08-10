@@ -5,7 +5,6 @@ import { trpc } from "@/lib/utils/trpc";
 import { CopyIcon, Loader, Trash2 } from "lucide-react";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
