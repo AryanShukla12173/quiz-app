@@ -10,7 +10,6 @@ import z from "zod";
 import { roleEnum } from "@/lib/schemas/data_schemas";
 import { redirect } from "next/navigation";
 
-// shadcn/ui components
 import {
   Form,
   FormField,
@@ -62,7 +61,7 @@ function SignUp() {
             console.log("Problems in mutation query");
           }
           if (isSuccess) {
-            redirect("/dashboard");
+            redirect("/test-admin-dashboard");
           }
         }
       } else {
@@ -153,7 +152,11 @@ function SignUp() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Password" {...field} />
+                      <Input
+                        type="password"
+                        placeholder="Password"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

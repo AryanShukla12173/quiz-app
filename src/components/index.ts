@@ -3,4 +3,4 @@ import Hero from "./hero";
 import Features from "./features";
 import Footer from "./footer";
 
-export {Header,Hero,Footer,Features};
+export { Header, Hero, Footer, Features };

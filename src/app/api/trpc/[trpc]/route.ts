@@ -2,7 +2,6 @@ import { appRouter } from '@/server/index'; // your main router
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { createClient } from '@supabase/supabase-js';
 import { type NextRequest } from 'next/server';
-import { type NextResponse } from 'next/server';
 
 
 const handler = (req: NextRequest) => {

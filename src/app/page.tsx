@@ -10,7 +10,7 @@ export default async function Home() {
   );
   const res = await supabase.auth.getUser();
   if (!res.data.user?.is_anonymous) {
-    redirect("/dashboard");
+    redirect("/test-admin-dashboard");
   }
   return (
     <>

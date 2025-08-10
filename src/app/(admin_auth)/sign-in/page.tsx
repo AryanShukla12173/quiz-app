@@ -1,14 +1,10 @@
 "use client";
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createClient } from "@/lib/utils/supabase/client";
 import { signInSchema } from "@/lib/schemas/formschemas";
 import { z } from "zod";
-
-
-// shadcn/ui components
 import {
   Form,
   FormField,
@@ -20,10 +16,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 function SignIn() {
   const supabase = createClient();
-
+  const router = useRouter()
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
@@ -31,18 +27,19 @@ function SignIn() {
       password: "",
     },
   });
-
-  const onSubmit = async (data: z.infer<typeof signInSchema>) => {
+  
+  const onSubmit = async (formData: z.infer<typeof signInSchema>) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
+      const { error,data } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
       });
 
       if (error) {
-        console.log("Error:", error);
-      } else {
-        redirect('/dashboard')
+        console.log(error)
+      } 
+      if(data.user){
+        router.replace('/test-admin-dashboard')
       }
     } catch (error) {}
   };
@@ -58,7 +55,6 @@ function SignIn() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* Email */}
               <FormField
                 control={form.control}
                 name="email"
@@ -77,7 +73,6 @@ function SignIn() {
                 )}
               />
 
-              {/* Password */}
               <FormField
                 control={form.control}
                 name="password"
@@ -95,8 +90,6 @@ function SignIn() {
                   </FormItem>
                 )}
               />
-
-              {/* Submit */}
               <Button
                 type="submit"
                 className="w-full"
