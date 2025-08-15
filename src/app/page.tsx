@@ -5,9 +5,9 @@ import "dotenv/config";
 import { redirect } from "next/navigation";
 export default async function Home() {
   const supabase = await createClient();
-  const res = await supabase.auth.getUser();
-  if (!res.data.user?.is_anonymous) {
-    redirect("/test-admin-dashboard");
+  const {data} = await supabase.auth.getUser();
+  if(data.user !== null){
+    redirect('/test-admin-dashboard')
   }
   return (
     <>

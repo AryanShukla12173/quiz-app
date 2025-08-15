@@ -24,11 +24,7 @@ function TestDisplay() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center p-8">
-        <Loader className="animate-spin" size={48} />
-      </div>
-    );
+    return <Loader className="animate-spin m-auto" size={40} />;
   }
 
   if (isError) {
@@ -40,19 +36,17 @@ function TestDisplay() {
   }
 
   if (isSuccess && (!data || data.length === 0)) {
-    return (
-      <div className="text-center text-lg py-8">
-        No Tests Created Yet
-      </div>
-    );
+    return <div className="text-center text-lg py-8">No Tests Created Yet</div>;
   }
 
   return (
-    
     <div className="flex flex-col gap-3 p-3">
       <h1 className="text-2xl font-bold">Tests Dashboard</h1>
       {data?.map((item, index) => (
-        <div key={item.testId ?? index} className="card bg-base-100 shadow-lg border">
+        <div
+          key={item.testId ?? index}
+          className="card bg-base-100 shadow-lg border"
+        >
           <div className="card-body">
             {/* Header */}
             <div className="flex justify-between items-start">
@@ -65,10 +59,14 @@ function TestDisplay() {
                   onClick={() => copyToClipboard(item.testId.toString())}
                   aria-label="Copy Test ID"
                   title={
-                    copiedId === item.testId.toString() ? "Copied!" : "Copy Test ID"
+                    copiedId === item.testId.toString()
+                      ? "Copied!"
+                      : "Copy Test ID"
                   }
                   className={`btn btn-ghost btn-sm ${
-                    copiedId === item.testId.toString() ? "bg-success text-success-content" : ""
+                    copiedId === item.testId.toString()
+                      ? "bg-success text-success-content"
+                      : ""
                   }`}
                 >
                   <Copy size={18} />
@@ -89,7 +87,8 @@ function TestDisplay() {
               <span className="font-semibold">Test ID:</span> {item.testId}
             </p>
             <p className="text-sm">
-              <span className="font-semibold">Duration:</span> {item.testDuration} minutes
+              <span className="font-semibold">Duration:</span>{" "}
+              {item.testDuration} minutes
             </p>
 
             {/* Footer */}

@@ -3,12 +3,12 @@ export const navItems =[
     {
         id : 1,
         name : 'Admin Sign Up',
-        href : "/"
+        href : "/sign-up"
     },
      {
         id : 2,
         name : 'Admin Login',
-        href : "/"
+        href : "/sign-in"
     },
      {
         id : 3,

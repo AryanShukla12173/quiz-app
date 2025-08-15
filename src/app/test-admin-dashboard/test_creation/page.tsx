@@ -30,7 +30,6 @@ function TestCreationPage() {
   });
   const {error,mutate,isSuccess,isError,isPending} = trpc.createCodeTest.useMutation()
   const onSubmit = (data: CodeTestInput) => {
-    console.log("Form Data:", JSON.stringify(data, null, 2));
     mutate(data)
     reset()
   };
