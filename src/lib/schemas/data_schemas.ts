@@ -32,7 +32,7 @@ export const codeTestSchema = z.object({
   testDuration: z.number().int().min(1, "Duration must be at least 1 minute"),
   problem: z
     .array(problemSchema)
-    .min(1, "At least one challenge is required"),
+    .min(1, "At least one problem is required"),
 });
 
 export type CodeTestInput = z.infer<typeof codeTestSchema>;
