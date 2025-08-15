@@ -4,10 +4,7 @@ import { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 export const createContext = async (opts: FetchCreateContextFnOptions) => {
   const { req } = opts;
 
-  const supabase = await createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVER_KEY!
-  );
+  const supabase = await createClient();
 
   const authHeader = req.headers.get('authorization');
   const token = authHeader?.replace('Bearer ', '');
