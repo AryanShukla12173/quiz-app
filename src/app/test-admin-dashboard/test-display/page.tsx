@@ -69,7 +69,7 @@ function TestDisplay() {
                 variant="destructive"
                 size="sm"
                 onClick={() => deleteTestMutation.mutate(item.testId)}
-                disabled={deleteTestMutation.isLoading}
+                disabled={isLoading}
                 aria-label="Delete Test"
               >
                 <Trash2 size={16} className="mr-1" />
