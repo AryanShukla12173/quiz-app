@@ -28,7 +28,7 @@ function TestCreationPage() {
     control,
     name: "problem",
   });
-  const {data,error,failureReason,mutate,isSuccess,isError,isPending} = trpc.createCodeTest.useMutation()
+  const {error,mutate,isSuccess,isError,isPending} = trpc.createCodeTest.useMutation()
   const onSubmit = (data: CodeTestInput) => {
     console.log("Form Data:", JSON.stringify(data, null, 2));
     mutate(data)
@@ -137,7 +137,7 @@ function TestCreationPage() {
             </div>
 
             {problemFields.length === 0 && (
-              <p className="text-base-content/70 text-center py-4">No problems added yet. Click "Add Problem" to get started.</p>
+              <p className="text-base-content/70 text-center py-4">No problems added yet. Click &quot;Add Problem&quot; to get started.</p>
             )}
 
             {problemFields.map((problemField, problemIndex) => (
@@ -353,7 +353,7 @@ function ProblemForm({ problemIndex, register, control, errors, onRemove }: Prob
           ))}
 
           {testCaseFields.length === 0 && (
-            <p className="text-base-content/70 text-sm text-center py-2">No test cases added. Click "Add Test Case" to add one.</p>
+            <p className="text-base-content/70 text-sm text-center py-2">No test cases added. Click &quot;Add Test Case&quot; to add one.</p>
           )}
 
           {problemErrors?.testcases && (
