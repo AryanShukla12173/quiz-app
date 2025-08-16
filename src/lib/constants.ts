@@ -13,11 +13,11 @@ export const navItems =[
      {
         id : 3,
         name : 'Code Test Platform Sign Up',
-        href : "/"
+        href : "/test-user-sign-up"
     },
      {
         id : 4,
         name : 'Code Test Platform Sign In',
-        href : "/"
+        href : "/test-user-sign-in"
     }
 ]

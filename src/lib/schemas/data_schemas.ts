@@ -1,4 +1,4 @@
-import { signUpSchema } from "./formschemas";
+import { signUpSchema, testUserSignUpSchema } from "./formschemas";
 import z from "zod";
 export const roleEnum = z.enum(["test_admin", "test_user", "admin"]);
 export const user_admin_profile_schema = signUpSchema
@@ -9,7 +9,13 @@ export const user_admin_profile_schema = signUpSchema
   .extend({
     role: roleEnum,
   });
-
+  export const test_user_profile_schema = testUserSignUpSchema.omit({
+    email : true,
+    password : true
+   })
+   .extend({
+    role : roleEnum
+   })
 export const testCaseSchema = z.object({
   input: z.string('input is required'),
   expectedOutput: z.string('output is required'),

@@ -1,4 +1,5 @@
 import z from "zod";
+import { roleEnum } from "./data_schemas";
 export const signUpSchema = z.object({
   full_name: z.string(),
   email: z.email(),
@@ -12,3 +13,17 @@ export const signInSchema = z.object({
   password: z.string().min(6, "Password needs to be atleast 6 characters"),
 });
 
+
+export const testUserSignUpSchema = z.object({
+  fullName : z.string(),
+  email : z.email(),
+  enrollmentId : z.string(),
+  branch :   z.string(),
+  year : z.enum({
+  1 : "1st Year",
+  2 : "2nd Year",
+  3 : "3rd Year",
+  4 : "4th Year",
+  }),
+  password : z.string().min(6, "Password needs to be atleast 6 characters"),
+})

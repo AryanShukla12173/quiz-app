@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import {
   user_admin_profile_schema,
   codeTestSchema,
+  test_user_profile_schema,
 } from "@/lib/schemas/data_schemas";
 import {
   testAdminUserProfileTable,
@@ -86,7 +87,6 @@ export const appRouter = router({
               testTitle: testData.testTitle,
               testDescription: testData.testDescription ?? null,
               testDuration: testData.testDuration,
-              createdAt: new Date(),
               userId: id,
             })
             .returning({ id: codeTests.id });
@@ -154,15 +154,27 @@ export const appRouter = router({
       return res;
     }
   }),
-  deleteCodeTest: publicProcedure.input(
-   z.number()
-  ).mutation(async ({ctx,input})=>{
-    if(ctx.user?.id){
-      await db.delete(codeTests).where(eq(codeTests.id,input))
-      return {success : true}
-    }
-
-  }),
+  deleteCodeTest: publicProcedure
+    .input(z.string())
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user?.id) {
+        await db.delete(codeTests).where(eq(codeTests.id, input));
+        return { success: true };
+      }
+    }),
+  createTestUserProfile: publicProcedure
+    .input(test_user_profile_schema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+      await db.insert(testUserProfileTable).values({
+        user_id: ctx.user.id,
+        branch: input.branch,
+        enrollment_id: input.enrollmentId,
+        fullName: input.fullName,
+        year: input.year,
+      });
+      return { success: true };
+    }),
 });
 
 export type AppRouter = typeof appRouter;

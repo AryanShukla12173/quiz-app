@@ -8,7 +8,7 @@ import { createClient } from "@/lib/utils/supabase/client";
 import { trpc } from "@/lib/utils/trpc";
 import z from "zod";
 import { roleEnum } from "@/lib/schemas/data_schemas";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation"
 
 import {
   Form,
@@ -26,7 +26,7 @@ function SignUp() {
   const supabaseClient = createClient();
   const addProfile = trpc.createProfile.useMutation();
   const { isError, isPending, isSuccess } = addProfile;
-
+  const router = useRouter();
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -50,19 +50,22 @@ function SignUp() {
         console.log("User creation successful:", data.user);
 
         if (data.user?.id) {
-          addProfile.mutate({
-            department: formData.department,
-            designation: formData.designation,
-            full_name: formData.full_name,
-            role: roleEnum.enum.test_admin,
-          });
-
-          if (isError) {
-            console.log("Problems in mutation query");
-          }
-          if (isSuccess) {
-            redirect("/test-admin-dashboard");
-          }
+          addProfile.mutate(
+            {
+              department: formData.department,
+              designation: formData.designation,
+              full_name: formData.full_name,
+              role: roleEnum.enum.test_admin,
+            },
+            {
+              onSuccess: () => {
+                router.replace("/test-admin-dashboard"); 
+              },
+              onError: () => {
+                console.log("Problems in mutation query");
+              },
+            }
+          );
         }
       } else {
         console.log("User creation unsuccessful:", error);
