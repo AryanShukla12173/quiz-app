@@ -13,11 +13,19 @@ export default async function Home() {
       .select("*")
       .eq("id", data.user.id)
       .single();
-    if(userProfileData?.Role === roleEnum.enum.test_admin){
-      redirect('/test-admin-dashboard')
+    console.log(error);
+    if (userProfileData?.Role === roleEnum.enum.test_admin) {
+      redirect("/test-admin-dashboard");
     }
-    if(userProfileData?.Role === roleEnum.enum.test_user){
-      redirect('/test-user-dashboard')
+    const { data: testUserProfile, error: error2 } = await supabase
+      .from("test_user_profile")
+      .select("*")
+      .eq("id", data.user.id)
+      .single();
+    console.log(error2);
+    console.log(testUserProfile);
+    if (testUserProfile?.Role === roleEnum.enum.test_user) {
+      redirect("/test-user-dashboard");
     }
   }
   return (

@@ -75,8 +75,8 @@ function TestUserSignUpPage() {
           }
         );
       }
-    } catch (err: any) {
-      setFormError("Unexpected error: " + err.message);
+    } catch (err) {
+      setFormError("Unexpected error: " + err);
     }
   };
 

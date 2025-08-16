@@ -5,7 +5,7 @@ import { navItems } from "@/lib/constants";
 import Link from "next/link";
 function Hero() {
   return (
-    <section className="hero bg-base-200 h-[80vh]">
+    <section className="hero bg-base-200">
       <div className="hero-content flex-col lg:flex-row-reverse">
         <Image
           src={HeroImage}

@@ -25,7 +25,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 function SignUp() {
   const supabaseClient = createClient();
   const addProfile = trpc.createProfile.useMutation();
-  const { isError, isPending, isSuccess } = addProfile;
+  const { isPending, } = addProfile;
   const router = useRouter();
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),

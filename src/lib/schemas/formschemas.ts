@@ -1,5 +1,4 @@
 import z from "zod";
-import { roleEnum } from "./data_schemas";
 export const signUpSchema = z.object({
   full_name: z.string(),
   email: z.email(),

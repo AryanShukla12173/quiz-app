@@ -25,7 +25,7 @@ export const testAdminUserProfileTable = pgTable("test_admin_profile", {
   user_id: uuid("id")
     .default(sql`gen_random_uuid()`)
     .primaryKey(),
-  fullName: text("full Name"),
+  fullName: text("fullName"),
   designation: text("Designation"),
   department: text("Department"),
   role: userRoleEnum("Role"),
@@ -38,7 +38,7 @@ export const testUserProfileTable = pgTable("test_user_profile", {
   user_id: uuid("id")
     .default(sql`gen_random_uuid()`)
     .primaryKey(),
-  fullName: text("Full Name"),
+  fullName: text("FullName"),
   enrollment_id: text("Enrollment ID"),
   branch: text("Branch"),
   year: yearEnum("Year"),
