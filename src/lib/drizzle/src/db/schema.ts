@@ -74,13 +74,14 @@ export const problems = pgTable("problems", {
 });
 
 export const testCases = pgTable("test_cases", {
-  id: uuid("id") .default(sql`gen_random_uuid()`) .primaryKey(),
+  id: uuid("id")
+    .default(sql`gen_random_uuid()`)
+    .primaryKey(),
   challengeId: uuid("problem_id")
     .references(() => problems.id, { onDelete: "cascade" })
     .notNull(),
   input: text("input").notNull(),
   expectedOutput: text("expected_output").notNull(),
-  description: text("description"),
   hidden: boolean("hidden").default(false).notNull(),
 });
 

@@ -6,6 +6,7 @@ import {
   user_admin_profile_schema,
   codeTestSchema,
   test_user_profile_schema,
+  codeTestResult,
 } from "@/lib/schemas/data_schemas";
 import {
   testAdminUserProfileTable,
@@ -120,14 +121,13 @@ export const appRouter = router({
                 challengeId: insertedChallenge.id,
                 input: tc.input,
                 expectedOutput: tc.expectedOutput,
-                description: tc.description ?? null,
                 hidden: !!tc.hidden,
               }));
 
               await tx.insert(testCases).values(rows);
             }
-            return { success: true, testId: insertedTest.id };
           }
+          return { success: true, testId: insertedTest.id };
         });
         return result;
       }
@@ -174,6 +174,69 @@ export const appRouter = router({
         year: input.year,
       });
       return { success: true };
+    }),
+  fetchTestData: publicProcedure
+    .input(z.string())
+    .query(async ({ ctx, input }) => {
+      const { user } = ctx;
+      if (!user) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "User not signed in",
+        });
+      }
+      const res = await db
+        .select()
+        .from(codeTests)
+        .where(eq(codeTests.id, input))
+        .innerJoin(problems, eq(problems.codeTestId, codeTests.id))
+        .innerJoin(testCases, eq(testCases.challengeId, problems.id));
+
+      // console.log(res);
+      const testMap = new Map<string, any>();
+
+      res.forEach((row) => {
+        const test = row.code_tests;
+        const problem = row.problems;
+        const testCase = row.test_cases;
+
+        // if test not in map → add it
+        if (!testMap.has(test.id)) {
+          testMap.set(test.id, {
+            testTitle: test.testTitle,
+            testDescription: test.testDescription,
+            testDuration: test.testDuration,
+            problem: [],
+          });
+        }
+
+        const testObj = testMap.get(test.id);
+        let problemObj = testObj.problem.find(
+          (p: { id: string }) => p.id === problem.id
+        );
+        if (!problemObj) {
+          problemObj = {
+            id: problem.id, // keep id internal
+            title: problem.title,
+            description: problem.description,
+            score: problem.score,
+            testcases: [],
+          };
+          testObj.problem.push(problemObj);
+        }
+
+        // push testcase into problem
+        problemObj.testcases.push({
+          input: testCase.input,
+          expectedOutput: testCase.expectedOutput,
+          hidden: testCase.hidden,
+        });
+      });
+
+      // Final nested result
+      const finalResult: codeTestResult =
+        Array.from(testMap.values())[0] ?? null;
+      return finalResult;
     }),
 });
 

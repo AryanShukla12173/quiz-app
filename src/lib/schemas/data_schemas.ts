@@ -19,7 +19,6 @@ export const user_admin_profile_schema = signUpSchema
 export const testCaseSchema = z.object({
   input: z.string('input is required'),
   expectedOutput: z.string('output is required'),
-  description: z.string().optional(),
   hidden: z.boolean(),
 });
 
@@ -41,4 +40,23 @@ export const codeTestSchema = z.object({
     .min(1, "At least one problem is required"),
 });
 
+export type codeTestResult = {
+  testTitle : string,
+  testDescription : string,
+  testDuration : number,
+  problem : {
+    id : string,
+    title: string,
+    description : string,
+    score : number,
+    testcases: {
+      input : string,
+      expectedOutput : string,
+      hidden : boolean
+    }[]
+  }[]
+}
+export const problemOutput = problemSchema.extend({
+  id : z.uuid()
+})
 export type CodeTestInput = z.infer<typeof codeTestSchema>;

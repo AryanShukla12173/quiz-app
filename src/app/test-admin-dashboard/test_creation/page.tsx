@@ -1,6 +1,12 @@
 "use client";
 import React from "react";
-import { useForm, useFieldArray, Control, UseFormRegister, FieldErrors } from "react-hook-form";
+import {
+  useForm,
+  useFieldArray,
+  Control,
+  UseFormRegister,
+  FieldErrors,
+} from "react-hook-form";
 import { Loader2, Plus, Trash2, X } from "lucide-react";
 import { CodeTestInput } from "@/lib/schemas/data_schemas";
 import { trpc } from "@/lib/utils/trpc";
@@ -10,14 +16,14 @@ function TestCreationPage() {
     register,
     handleSubmit,
     formState: { errors },
-    reset
+    reset,
   } = useForm<CodeTestInput>({
     defaultValues: {
       testTitle: "",
       testDescription: "",
       testDuration: 10,
-      problem: []
-    }
+      problem: [],
+    },
   });
 
   const {
@@ -28,31 +34,34 @@ function TestCreationPage() {
     control,
     name: "problem",
   });
-  const {error,mutate,isSuccess,isError,isPending} = trpc.createCodeTest.useMutation()
+  const { error, mutate, isSuccess, isError, isPending } =
+    trpc.createCodeTest.useMutation();
   const onSubmit = (data: CodeTestInput) => {
-    mutate(data)
-    reset()
+    console.log(data)
+    mutate(data);
+    reset();
   };
 
   const addNewProblem = () => {
     addProblem({
-      title: '',
-      description: '',
+      title: "",
+      description: "",
       score: 10,
-      testcases: [{
-        input: '',
-        expectedOutput: '',
-        description: '',
-        hidden: false
-      }]
+      testcases: [
+        {
+          input: "",
+          expectedOutput: "",
+          hidden: false,
+        },
+      ],
     });
   };
 
   return (
-     <div className="min-h-screen w-screen bg-base-200">
+    <div className="min-h-screen w-screen bg-base-200">
       <div className="max-w-screen mx-auto card bg-base-100 shadow-md p-6">
         <h1 className="text-2xl font-bold mb-6">Create New Coding Test</h1>
-        
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* --- Success/Error Messages --- */}
           {isSuccess && (
@@ -76,12 +85,16 @@ function TestCreationPage() {
                   <span className="label-text">Test Title *</span>
                 </label>
                 <input
-                  {...register("testTitle", { required: "Test title is required" })}
+                  {...register("testTitle", {
+                    required: "Test title is required",
+                  })}
                   placeholder="Enter title of the test"
                   className="input input-bordered w-full"
                 />
                 {errors.testTitle && (
-                  <span className="text-error text-sm mt-1">{errors.testTitle.message}</span>
+                  <span className="text-error text-sm mt-1">
+                    {errors.testTitle.message}
+                  </span>
                 )}
               </div>
 
@@ -104,10 +117,13 @@ function TestCreationPage() {
                   <span className="label-text">Test Duration (minutes) *</span>
                 </label>
                 <input
-                  {...register("testDuration", { 
+                  {...register("testDuration", {
                     required: "Duration is required",
                     valueAsNumber: true,
-                    min: { value: 1, message: "Duration must be at least 1 minute" }
+                    min: {
+                      value: 1,
+                      message: "Duration must be at least 1 minute",
+                    },
                   })}
                   type="number"
                   min="1"
@@ -115,7 +131,9 @@ function TestCreationPage() {
                   className="input input-bordered w-full"
                 />
                 {errors.testDuration && (
-                  <span className="text-error text-sm mt-1">{errors.testDuration.message}</span>
+                  <span className="text-error text-sm mt-1">
+                    {errors.testDuration.message}
+                  </span>
                 )}
               </div>
             </div>
@@ -136,7 +154,10 @@ function TestCreationPage() {
             </div>
 
             {problemFields.length === 0 && (
-              <p className="text-base-content/70 text-center py-4">No problems added yet. Click &quot;Add Problem&quot; to get started.</p>
+              <p className="text-base-content/70 text-center py-4">
+                No problems added yet. Click &quot;Add Problem&quot; to get
+                started.
+              </p>
             )}
 
             {problemFields.map((problemField, problemIndex) => (
@@ -151,7 +172,9 @@ function TestCreationPage() {
             ))}
 
             {errors.problem && (
-              <p className="text-error text-sm mt-2">At least one problem is required</p>
+              <p className="text-error text-sm mt-2">
+                At least one problem is required
+              </p>
             )}
           </div>
 
@@ -167,7 +190,7 @@ function TestCreationPage() {
             >
               {isPending && <Loader2 className="animate-spin mr-2" size={16} />}
               {isPending ? "Creating..." : "Create Test"}
-            </button> 
+            </button>
           </div>
         </form>
       </div>
@@ -185,7 +208,13 @@ interface ProblemFormProps {
 }
 
 // Problem form component
-function ProblemForm({ problemIndex, register, control, errors, onRemove }: ProblemFormProps) {
+function ProblemForm({
+  problemIndex,
+  register,
+  control,
+  errors,
+  onRemove,
+}: ProblemFormProps) {
   const {
     fields: testCaseFields,
     append: addTestCase,
@@ -197,10 +226,9 @@ function ProblemForm({ problemIndex, register, control, errors, onRemove }: Prob
 
   const addNewTestCase = () => {
     addTestCase({
-      input: '',
-      expectedOutput: '',
-      description: '',
-      hidden: false
+      input: "",
+      expectedOutput: "",
+      hidden: false,
     });
   };
 
@@ -226,14 +254,16 @@ function ProblemForm({ problemIndex, register, control, errors, onRemove }: Prob
             <span className="label-text">Problem Title *</span>
           </label>
           <input
-            {...register(`problem.${problemIndex}.title`, { 
-              required: "Problem title is required" 
+            {...register(`problem.${problemIndex}.title`, {
+              required: "Problem title is required",
             })}
             placeholder="Enter problem title"
             className="input input-bordered w-full"
           />
           {problemErrors?.title && (
-            <span className="text-error text-sm mt-1">{problemErrors.title.message}</span>
+            <span className="text-error text-sm mt-1">
+              {problemErrors.title.message}
+            </span>
           )}
         </div>
 
@@ -256,10 +286,10 @@ function ProblemForm({ problemIndex, register, control, errors, onRemove }: Prob
             <span className="label-text">Score *</span>
           </label>
           <input
-            {...register(`problem.${problemIndex}.score`, { 
+            {...register(`problem.${problemIndex}.score`, {
               required: "Score is required",
               valueAsNumber: true,
-              min: { value: 0, message: "Score must be non-negative" }
+              min: { value: 0, message: "Score must be non-negative" },
             })}
             type="number"
             min="0"
@@ -267,7 +297,9 @@ function ProblemForm({ problemIndex, register, control, errors, onRemove }: Prob
             className="input input-bordered w-full"
           />
           {problemErrors?.score && (
-            <span className="text-error text-sm mt-1">{problemErrors.score.message}</span>
+            <span className="text-error text-sm mt-1">
+              {problemErrors.score.message}
+            </span>
           )}
         </div>
 
@@ -286,9 +318,14 @@ function ProblemForm({ problemIndex, register, control, errors, onRemove }: Prob
           </div>
 
           {testCaseFields.map((testCaseField, testCaseIndex) => (
-            <div key={testCaseField.id} className="card bg-base-200 border border-base-300 p-3 mb-3 flex  gap-3">
+            <div
+              key={testCaseField.id}
+              className="card bg-base-200 border border-base-300 p-3 mb-3 flex  gap-3"
+            >
               <div className="flex justify-between items-start mb-3">
-                <h5 className="text-sm font-medium">Test Case {testCaseIndex + 1}</h5>
+                <h5 className="text-sm font-medium">
+                  Test Case {testCaseIndex + 1}
+                </h5>
                 <button
                   type="button"
                   onClick={() => removeTestCase(testCaseIndex)}
@@ -304,9 +341,12 @@ function ProblemForm({ problemIndex, register, control, errors, onRemove }: Prob
                     <span className="label-text">Input *</span>
                   </label>
                   <textarea
-                    {...register(`problem.${problemIndex}.testcases.${testCaseIndex}.input`, {
-                      required: "Input is required"
-                    })}
+                    {...register(
+                      `problem.${problemIndex}.testcases.${testCaseIndex}.input`,
+                      {
+                        required: "Input is required",
+                      }
+                    )}
                     placeholder="Enter test input"
                     rows={2}
                     className="textarea textarea-bordered text-sm"
@@ -317,9 +357,12 @@ function ProblemForm({ problemIndex, register, control, errors, onRemove }: Prob
                     <span className="label-text">Expected Output *</span>
                   </label>
                   <textarea
-                    {...register(`problem.${problemIndex}.testcases.${testCaseIndex}.expectedOutput`, {
-                      required: "Expected output is required"
-                    })}
+                    {...register(
+                      `problem.${problemIndex}.testcases.${testCaseIndex}.expectedOutput`,
+                      {
+                        required: "Expected output is required",
+                      }
+                    )}
                     placeholder="Enter expected output"
                     rows={2}
                     className="textarea textarea-bordered text-sm"
@@ -328,21 +371,12 @@ function ProblemForm({ problemIndex, register, control, errors, onRemove }: Prob
               </div>
 
               <div className="form-control mt-3">
-                <label className="label">
-                  <span className="label-text">Description</span>
-                </label>
-                <input
-                  {...register(`problem.${problemIndex}.testcases.${testCaseIndex}.description`)}
-                  placeholder="Optional test case description"
-                  className="input input-bordered text-sm"
-                />
-              </div>
-
-              <div className="form-control mt-3">
                 <label className="label cursor-pointer">
                   <input
                     type="checkbox"
-                    {...register(`problem.${problemIndex}.testcases.${testCaseIndex}.hidden`)}
+                    {...register(
+                      `problem.${problemIndex}.testcases.${testCaseIndex}.hidden`
+                    )}
                     className="checkbox checkbox-sm"
                   />
                   <span className="label-text ml-2">Hidden test case</span>
@@ -352,11 +386,15 @@ function ProblemForm({ problemIndex, register, control, errors, onRemove }: Prob
           ))}
 
           {testCaseFields.length === 0 && (
-            <p className="text-base-content/70 text-sm text-center py-2">No test cases added. Click &quot;Add Test Case&quot; to add one.</p>
+            <p className="text-base-content/70 text-sm text-center py-2">
+              No test cases added. Click &quot;Add Test Case&quot; to add one.
+            </p>
           )}
 
           {problemErrors?.testcases && (
-            <span className="text-error text-sm mt-1">At least one test case is required</span>
+            <span className="text-error text-sm mt-1">
+              At least one test case is required
+            </span>
           )}
         </div>
       </div>
