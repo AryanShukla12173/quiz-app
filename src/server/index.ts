@@ -172,6 +172,7 @@ export const appRouter = router({
         enrollment_id: input.enrollmentId,
         fullName: input.fullName,
         year: input.year,
+        role : input.role
       });
       return { success: true };
     }),
