@@ -200,33 +200,31 @@ export const appRouter = router({
         .innerJoin(testCases, eq(testCases.challengeId, problems.id));
 
       // console.log(res);
-      const testMap = new Map<string, any>();
+      const testMap = new Map<string, codeTestResult>();
 
       res.forEach((row) => {
-        const test = row.code_tests;
-        const problem = row.problems;
-        const testCase = row.test_cases;
+        const testRow = row.code_tests;
+        const problemRow = row.problems;
+        const testCaseRow = row.test_cases;
 
         // if test not in map → add it
-        if (!testMap.has(test.id)) {
-          testMap.set(test.id, {
-            testTitle: test.testTitle,
-            testDescription: test.testDescription,
-            testDuration: test.testDuration,
+        if (!testMap.has(testRow.id)) {
+          testMap.set(testRow.id, {
+            testTitle: testRow.testTitle,
+            testDescription: testRow.testDescription ?? "", // handle optional
+            testDuration: testRow.testDuration,
             problem: [],
           });
         }
 
-        const testObj = testMap.get(test.id);
-        let problemObj = testObj.problem.find(
-          (p: { id: string }) => p.id === problem.id
-        );
+        const testObj = testMap.get(testRow.id)!;
+        let problemObj = testObj.problem.find((p) => p.id === problemRow.id);
         if (!problemObj) {
           problemObj = {
-            id: problem.id, // keep id internal
-            title: problem.title,
-            description: problem.description,
-            score: problem.score,
+            id: problemRow.id,
+            title: problemRow.title,
+            description: problemRow.description ?? "",
+            score: problemRow.score,
             testcases: [],
           };
           testObj.problem.push(problemObj);
@@ -234,15 +232,16 @@ export const appRouter = router({
 
         // push testcase into problem
         problemObj.testcases.push({
-          input: testCase.input,
-          expectedOutput: testCase.expectedOutput,
-          hidden: testCase.hidden,
+          input: testCaseRow.input,
+          expectedOutput: testCaseRow.expectedOutput,
+          hidden: testCaseRow.hidden,
         });
       });
 
-      // Final nested result
+      // Return single test result (or null if none)
       const finalResult: codeTestResult =
         Array.from(testMap.values())[0] ?? null;
+
       return finalResult;
     }),
   executeCode: publicProcedure

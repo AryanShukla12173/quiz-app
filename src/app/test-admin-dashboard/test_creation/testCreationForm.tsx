@@ -57,7 +57,7 @@ function TestCreationPage() {
   };
 
   return (
-    <div className="min-h-screen w-screen bg-base-200">
+    <div className="min-h-screen w-screen bg-base-200 overflow-auto">
       <div className="max-w-screen mx-auto card bg-base-100 shadow-md p-6">
         <h1 className="text-2xl font-bold mb-6">Create New Coding Test</h1>
 
