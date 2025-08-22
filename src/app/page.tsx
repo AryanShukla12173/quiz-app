@@ -8,7 +8,7 @@ export default async function Home() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   if (data.user?.id != null) {
-    const { data: userProfileData, error } = await supabase
+    const { data: userProfileData } = await supabase
       .from("test_admin_profile")
       .select("*")
       .eq("id", data.user.id)

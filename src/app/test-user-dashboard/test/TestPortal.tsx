@@ -46,9 +46,6 @@ function TestPortal() {
     (c) => c.problemId === selectedProblemId
   )?.code;
   const { mutate: executeCodeBatch } = trpc.executeCodeBatch.useMutation();
-  const currentTestCaseCodeExecutionMap = testStore(
-    (state) => state.testCaseCodeExecutionMap
-  );
   const runCodeBatch = async () => {
     executeCodeBatch(
       {

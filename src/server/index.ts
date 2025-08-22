@@ -11,7 +11,6 @@ import {
   codeExecutionResult,
   batchcodeExecutionInputSchema,
   batchCodeExecutionResult,
-  testCaseSchema,
   testCaseExecutionResult,
 } from "@/lib/schemas/data_schemas";
 import {
@@ -25,7 +24,7 @@ import {
 import { router, publicProcedure } from "@/server/trpc";
 
 import { TRPCError } from "@trpc/server";
-import z, { TypeOf } from "zod";
+import z from "zod";
 export const appRouter = router({
   createProfile: publicProcedure
     .input(user_admin_profile_schema)
@@ -305,7 +304,7 @@ export const appRouter = router({
       console.log("OneCompiler Result:", data);
       const testcases = input.testcases;
       console.log("testcases:", testcases);
-      let result: testCaseExecutionResult = {
+      const result: testCaseExecutionResult = {
         problem_id: input.problemId,
         problem_result: [],
       };
