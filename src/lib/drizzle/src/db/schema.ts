@@ -6,6 +6,7 @@ import {
   integer,
   timestamp,
   boolean,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm/relations";
 import { sql } from "drizzle-orm";
@@ -84,6 +85,22 @@ export const testCases = pgTable("test_cases", {
   expectedOutput: text("expected_output").notNull(),
   hidden: boolean("hidden").default(false).notNull(),
 });
+// Stores the user's execution results for a problem
+export const userProblemResults = pgTable("user_problem_results", {
+  id: uuid("id")
+    .default(sql`gen_random_uuid()`)
+    .primaryKey(),
+  userId: uuid("user_id")
+    .references(() => testUserProfileTable.user_id, { onDelete: "cascade" })
+    .notNull(),
+  problemId: uuid("problem_id")
+    .references(() => problems.id, { onDelete: "cascade" })
+    .notNull(),
+  executionResults: jsonb("execution_results").notNull(), // array of test case results
+  lastSubmittedAt: timestamp("last_submitted_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
 
 // Relations between Tables
 
@@ -105,3 +122,18 @@ export const testCasesRelations = relations(testCases, ({ one }) => ({
     references: [problems.id],
   }),
 }));
+
+// Optional: relations for easy querying
+export const userProblemResultsRelations = relations(
+  userProblemResults,
+  ({ one }) => ({
+    user: one(testUserProfileTable, {
+      fields: [userProblemResults.userId],
+      references: [testUserProfileTable.user_id],
+    }),
+    problem: one(problems, {
+      fields: [userProblemResults.problemId],
+      references: [problems.id],
+    }),
+  })
+);

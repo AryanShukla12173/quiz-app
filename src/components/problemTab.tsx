@@ -13,7 +13,7 @@ function ProblemTab() {
   const testcase = problem.testcases?.[0];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-4">
       {/* Title */}
       <h2 className="text-xl font-bold">{problem.title}</h2>
 

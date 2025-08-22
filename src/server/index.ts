@@ -7,6 +7,12 @@ import {
   codeTestSchema,
   test_user_profile_schema,
   codeTestResult,
+  codeExecutionInputSchema,
+  codeExecutionResult,
+  batchcodeExecutionInputSchema,
+  batchCodeExecutionResult,
+  testCaseSchema,
+  testCaseExecutionResult,
 } from "@/lib/schemas/data_schemas";
 import {
   testAdminUserProfileTable,
@@ -14,11 +20,12 @@ import {
   codeTests,
   problems,
   testCases,
+  userProblemResults,
 } from "@/lib/drizzle/src/db/schema";
 import { router, publicProcedure } from "@/server/trpc";
 
 import { TRPCError } from "@trpc/server";
-import z from "zod";
+import z, { TypeOf } from "zod";
 export const appRouter = router({
   createProfile: publicProcedure
     .input(user_admin_profile_schema)
@@ -172,7 +179,7 @@ export const appRouter = router({
         enrollment_id: input.enrollmentId,
         fullName: input.fullName,
         year: input.year,
-        role : input.role
+        role: input.role,
       });
       return { success: true };
     }),
@@ -238,6 +245,110 @@ export const appRouter = router({
       const finalResult: codeTestResult =
         Array.from(testMap.values())[0] ?? null;
       return finalResult;
+    }),
+  executeCode: publicProcedure
+    .input(codeExecutionInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      console.log(input);
+      if (!ctx.user) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+      const res = await fetch(
+        "https://onecompiler-apis.p.rapidapi.com/api/v1/run",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-rapidapi-host": process.env.RAPID_API_HOST!,
+            "x-rapidapi-key": process.env.RAPID_API_KEY!,
+          },
+          body: JSON.stringify(input),
+        }
+      );
+      if (!res.ok) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `OneCompiler API error: ${res.status}`,
+        });
+      }
+      const data: codeExecutionResult = await res.json();
+      return data;
+    }),
+  executeCodeBatch: publicProcedure
+    .input(batchcodeExecutionInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+        });
+      }
+      console.log("Input to Fetch Call:", input.input);
+      const res = await fetch(
+        "https://onecompiler-apis.p.rapidapi.com/api/v1/run",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-rapidapi-host": process.env.RAPID_API_HOST!,
+            "x-rapidapi-key": process.env.RAPID_API_KEY!,
+          },
+          body: JSON.stringify(input.input),
+        }
+      );
+      if (!res.ok) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `OneCompiler API error: ${res.json}`,
+        });
+      }
+      const data: batchCodeExecutionResult = await res.json();
+      console.log("OneCompiler Result:", data);
+      const testcases = input.testcases;
+      console.log("testcases:", testcases);
+      let result: testCaseExecutionResult = {
+        problem_id: input.problemId,
+        problem_result: [],
+      };
+      data.forEach((execution) => {
+        testcases.forEach((element) => {
+          if (element.expectedOutput.trim() === execution.stdout.trim()) {
+            result.problem_result.push({
+              testCaseInput: element.input,
+              testCaseOutput: element.expectedOutput,
+              correctOutput: true,
+              actualInput: execution.stdin,
+              actualOutput: execution.stdout,
+              hidden: element.hidden,
+            });
+          } else {
+            result.problem_result.push({
+              testCaseInput: element.input,
+              testCaseOutput: element.expectedOutput,
+              correctOutput: false,
+              actualInput: execution.stdin,
+              actualOutput: execution.stdout,
+              hidden: element.hidden,
+            });
+          }
+        });
+      });
+      console.log("Result:", result);
+      await db
+        .insert(userProblemResults)
+        .values({
+          userId: ctx.user.id,
+          problemId: input.problemId,
+          executionResults: result.problem_result, // store array of test case results
+          lastSubmittedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [userProblemResults.userId, userProblemResults.problemId], // unique constraint
+          set: {
+            executionResults: result.problem_result,
+            lastSubmittedAt: new Date(),
+          },
+        });
+      return result;
     }),
 });
 

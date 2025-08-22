@@ -5,12 +5,12 @@ import { navItems } from "@/lib/constants";
 import Link from "next/link";
 function Hero() {
   return (
-    <section className="hero bg-base-200">
+    <section className="hero bg-base-200 h-[90vh]">
       <div className="hero-content flex-col lg:flex-row-reverse">
         <Image
           src={HeroImage}
           alt="#"
-          className="object-cover h-[400px] w-[900px] rounded space-y-5"
+          className="object-cover h-[400px] w-[900px] rounded-xl space-y-5"
           priority
         />
         <div>

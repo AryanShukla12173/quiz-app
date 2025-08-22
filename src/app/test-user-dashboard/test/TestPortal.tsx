@@ -5,15 +5,15 @@ import TestCodeEditor from "@/components/editor";
 import TestTabs from "@/components/Tabs";
 import { trpc } from "@/lib/utils/trpc";
 import { testStore } from "@/store/testEditorStore";
+import { languageExtensions } from "@/lib/constants";
 function TestPortal() {
   const fetch = trpc.fetchTestData.useQuery;
-  const { data, isSuccess } = fetch("66ce1101-b400-44f2-a250-8c5f8423641c");
+  const { data, isSuccess } = fetch("2ef3d709-93bf-48c0-ac53-798ae42dd6ad");
   // Subscribe to store values
   const selectedProblemId = testStore((state) => state.selectedProblemId);
   const problems = testStore((state) => state.problems);
   const setSelectedProblemId = testStore((state) => state.setSelectedProblemId);
-
-  // Initialize selectedProblemId if none
+  const setSelectedTab = testStore((state) => state.setActiveTab);
   useEffect(() => {
     if (isSuccess) {
       testStore.setState({ problems: data.problem });
@@ -22,13 +22,92 @@ function TestPortal() {
     if (!selectedProblemId && problems && problems.length > 0) {
       setSelectedProblemId(problems[0].id);
     }
-  }, [selectedProblemId, problems, setSelectedProblemId,isSuccess,data?.problem]);
-
+  }, [
+    selectedProblemId,
+    problems,
+    setSelectedProblemId,
+    isSuccess,
+    data?.problem,
+  ]);
+  const testcases = testStore((state) => state.problems).find(
+    (item) => item.id === selectedProblemId
+  )?.testcases;
+  const testcaseArr: string[] = [];
+  testcases?.forEach((item) => {
+    testcaseArr.push(item.input);
+  });
+  const selectedLanguage = testStore((state) => state.selectedLanguage);
+  const ext = languageExtensions[selectedLanguage] || "txt"; // default
+  const codeMap = testStore((state) => state.codeMap);
+  const selectedLanguageBoilerPlate = testStore(
+    (state) => state.selectedLanguageBoilerPlate
+  );
+  const savedCode = codeMap.find(
+    (c) => c.problemId === selectedProblemId
+  )?.code;
+  const { mutate: executeCodeBatch } = trpc.executeCodeBatch.useMutation();
+  const currentTestCaseCodeExecutionMap = testStore(
+    (state) => state.testCaseCodeExecutionMap
+  );
+  const runCodeBatch = async () => {
+    executeCodeBatch(
+      {
+        problemId: selectedProblemId,
+        input: {
+          stdin: testcaseArr,
+          language: selectedLanguage,
+          files: [
+            {
+              name: `Main.${ext}`,
+              content: savedCode ?? selectedLanguageBoilerPlate,
+            },
+          ],
+        },
+        testcases: testcases!,
+      },
+      {
+        onSuccess: (res) => {
+          console.log("data:", res);
+          testStore.setState((state) => ({
+            testCaseCodeExecutionMap: [
+              // keep results for other problems
+              ...state.testCaseCodeExecutionMap.filter(
+                (r) => r.problem_id !== res.problem_id
+              ),
+              // add new result for this problem
+              res,
+            ],
+          }));
+        },
+        onError: (res) => {
+          console.log(res.data);
+        },
+      }
+    );
+  };
   return (
-    <div className="flex flex-row">
-      {isSuccess && <ProblemList />}
-      <TestCodeEditor />
-      <TestTabs />
+    <div className="overflow-hidden">
+      <nav className="navbar p-3 ">
+        <div className="navbar-start">
+          <span className="text-2xl text-blue-400 font-bold">QuizApp</span>
+        </div>
+        <div className="navbar-end">
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              runCodeBatch();
+              setSelectedTab("Submit");
+            }}
+          >
+            Submit
+          </button>
+        </div>
+      </nav>
+      <div className="flex flex-row">
+        {isSuccess && <ProblemList />}
+        <TestCodeEditor />
+        <TestTabs />
+      </div>
     </div>
   );
 }

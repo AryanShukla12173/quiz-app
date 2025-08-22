@@ -13,7 +13,7 @@ export default async function Home() {
       .select("*")
       .eq("id", data.user.id)
       .single();
-    console.log(error);
+      console.log(userProfileData)
     if (userProfileData?.Role === roleEnum.enum.test_admin) {
       redirect("/test-admin-dashboard");
     }

@@ -68,7 +68,6 @@ function UserPage() {
       .from("test_user_profile")
       .select("FullName")
       .single();
-    console.log(data);
     if (error) {
       console.error("Error fetching user:", error);
       return;

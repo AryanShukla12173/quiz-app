@@ -5,8 +5,7 @@ import { testStore } from "@/store/testEditorStore";
 function ProblemList() {
   const selectedProblemId = testStore((state) => state.selectedProblemId);
   const setSelectedProblemId = testStore((state) => state.setSelectedProblemId);
-  const problems = testStore((state)=>state.problems)
- console.log(problems)
+  const problems = testStore((state) => state.problems);
   return (
     <ol className="w-1/6 border min-h-screen">
       <h1 className="bg-base-300 p-4 font-bold rounded-lg">Problems</h1>

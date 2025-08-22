@@ -19,7 +19,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 function AdminSignInForm() {
   const supabase = createClient();
-  const router = useRouter()
+  const router = useRouter();
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
@@ -27,27 +27,27 @@ function AdminSignInForm() {
       password: "",
     },
   });
-  
+
   const onSubmit = async (formData: z.infer<typeof signInSchema>) => {
     try {
-      const { error,data } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
-
+      
       if (error) {
-        console.log(error)
-      } 
-      if(data.user){
-        router.replace('/test-admin-dashboard')
+        console.log(error);
+      }
+      if (data.user) {
+        router.replace("/test-admin-dashboard");
       }
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 ">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">

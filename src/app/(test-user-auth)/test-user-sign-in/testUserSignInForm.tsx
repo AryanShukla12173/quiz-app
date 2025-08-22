@@ -39,7 +39,7 @@ function TestUserSignInPage() {
       }
 
       if (data?.user) {
-        router.replace("/test-user-dashboard"); // ✅ successful login
+        router.replace("/test-user-dashboard");
       } else {
         setError("No user found. Please try again.");
       }
@@ -54,24 +54,25 @@ function TestUserSignInPage() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="flex flex-col w-1/2 m-auto gap-5 justify-between items-center my-18 p-6 max-w-[25vw]"
+      className="flex flex-col w-1/4 m-auto gap-5 justify-between items-center my-32 p-6 shadow-2xl"
     >
       <span className="text-2xl font-bold">Test User Sign In</span>
 
-      <div className="flex flex-col justify-between items-center w-[25vw]">
-        <label className="input">
+      <div className="flex flex-col w-full">
+        <label className="input w-full">
           <Mail /> Email
-          <input {...register("email")} />
+          <input {...register("email")} className="w-full" />
         </label>
         {errors.email && <p className="text-error">{errors.email.message}</p>}
       </div>
 
-      <div className="flex flex-col justify-between items-center w-[25vw] relative">
+      <div className="flex flex-col w-full relative">
         <label className="input w-full">
           <Lock /> Password
           <input
             {...register("password")}
             type={showPassword ? "text" : "password"}
+            className="w-full"
           />
           <button
             type="button"

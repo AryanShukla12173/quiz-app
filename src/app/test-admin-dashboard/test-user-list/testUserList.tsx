@@ -59,6 +59,7 @@ function TestUserList() {
               <TableHead>Enrollment ID</TableHead>
               <TableHead>Full Name</TableHead>
               <TableHead>Branch</TableHead>
+              <TableHead>Department</TableHead>
               <TableHead>Year</TableHead>
               <TableHead>Created At</TableHead>
             </TableRow>

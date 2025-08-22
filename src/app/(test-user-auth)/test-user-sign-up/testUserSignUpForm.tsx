@@ -16,7 +16,6 @@ import {
 const yearOptions = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 import { trpc } from "@/lib/utils/trpc";
 import { createClient } from "@/lib/utils/supabase/client";
-import { roleEnum } from "@/lib/schemas/data_schemas";
 import { useRouter } from "next/navigation";
 
 function TestUserSignUpPage() {
@@ -60,7 +59,7 @@ function TestUserSignUpPage() {
             enrollmentId: formData.enrollmentId,
             fullName: formData.fullName,
             year: formData.year,
-            role: roleEnum.enum.test_user,
+            role: 'test_user',
           },
           {
             onSuccess: () => {
@@ -83,7 +82,7 @@ function TestUserSignUpPage() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="flex flex-col w-1/2 m-auto gap-3 justify-between items-center my-18 p-6"
+      className="flex flex-col w-[28vw] m-auto gap-3 justify-between items-center my-18 p-6 shadow-2xl"
     >
       <h1 className="text-2xl font-bold mb-3">Test User Sign Up</h1>
 

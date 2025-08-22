@@ -13,7 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <body className="overflow-hidden">
         <TRPCProvider>{children}</TRPCProvider>
       </body>
     </html>

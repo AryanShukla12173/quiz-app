@@ -120,3 +120,13 @@ int main() {
 }`,
   },
 ];
+
+
+export const languageExtensions: Record<string, string> = {
+  java: "java",
+  python: "py",
+  javascript: "js",
+  c: "c",
+  cpp: "cpp",
+  // add more languages if needed
+};
