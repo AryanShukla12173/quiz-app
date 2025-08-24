@@ -1,75 +1,52 @@
 "use client";
 import React from "react";
 import { Play } from "lucide-react";
-import { Languages } from "@/lib/constants";
+import { Languages, languageExtensions } from "@/lib/constants";
 import { testStore } from "@/store/testEditorStore";
 import Editor from "@monaco-editor/react";
 import { trpc } from "@/lib/utils/trpc";
-import { languageExtensions } from "@/lib/constants";
+
 function TestCodeEditor() {
-  const selectedLanguage = testStore((state) => state.selectedLanguage);
-  const ext = languageExtensions[selectedLanguage] || "txt";
   const selectedProblemId = testStore((state) => state.selectedProblemId);
-  const selectedLanguageBoilerPlate = testStore(
-    (state) => state.selectedLanguageBoilerPlate
-  );
-  const stdin = testStore((state) => state.stdin);
   const codeMap = testStore((state) => state.codeMap);
-  const savedCode = codeMap.find(
-    (c) => c.problemId === selectedProblemId
-  )?.code;
-  const {
-    mutate: executeCode,
-    isPending,
-  } = trpc.executeCode.useMutation();
-  // console.log(data)
-  const setActiveTab = testStore((state)=>state.setActiveTab)
-  function handleEditorChange(value: string | undefined) {
+  const savedProblem = codeMap.find((c) => c.problemId === selectedProblemId);
+
+  const languageId = savedProblem?.languageId ?? Languages[0].id;
+  const savedCode = savedProblem?.code ?? Languages.find((l) => l.id === languageId)?.boilerplate ?? "";
+  const ext = languageExtensions[languageId] || "txt";
+
+  const updateProblemCode = testStore((state) => state.updateProblemCode);
+  const resetProblemLanguage = testStore((state) => state.resetProblemLanguage);
+  const setActiveTab = testStore((state) => state.setActiveTab);
+  const stdin = testStore((state) => state.stdin);
+
+  const { mutate: executeCode, isPending } = trpc.executeCode.useMutation();
+
+  const handleEditorChange = (value: string | undefined) => {
     if (value != null) {
-      testStore.setState((state) => {
-        const updated = state.codeMap.map((c) =>
-          c.problemId === selectedProblemId
-            ? { ...c, code: value, fileName: `Main.${ext}` }
-            : c
-        );
-        const exists = state.codeMap.some(
-          (c) => c.problemId === selectedProblemId
-        );
-        return {
-          codeMap: exists
-            ? updated
-            : [
-                ...updated,
-                {
-                  problemId: selectedProblemId,
-                  code: value,
-                  fileName: `Main.${ext}`,
-                },
-              ],
-        };
-      });
+      updateProblemCode(selectedProblemId, value);
     }
-  }
+  };
 
   const runCode = () => {
     executeCode(
       {
         problem_id: selectedProblemId,
-        language: selectedLanguage,
+        language: languageId,
         stdin,
         files: [
           {
             name: `Main.${ext}`,
-            content: savedCode ?? selectedLanguageBoilerPlate,
+            content: savedCode,
           },
         ],
       },
       {
         onSuccess: (res) => {
           if (res.status === "success") {
-            if (res.stderr && res.stderr.trim() !== "") {
+            if (res.stderr?.trim()) {
               testStore.setState({ output: res.stderr });
-            } else if (res.stdout && res.stdout.trim() !== "") {
+            } else if (res.stdout?.trim()) {
               testStore.setState({ output: res.stdout });
             } else {
               testStore.setState({ output: "" });
@@ -81,7 +58,7 @@ function TestCodeEditor() {
         },
       }
     );
-    setActiveTab('Test')
+    setActiveTab("Test");
   };
 
   return (
@@ -89,16 +66,10 @@ function TestCodeEditor() {
       <div className="p-2 w-[50vw] flex flex-row gap-3 bg-base-300 justify-end items-center">
         <select
           className="select w-1/6"
-          value={selectedLanguage}
+          value={languageId}
           onChange={(e) => {
             const langId = e.target.value;
-            const lang = Languages.find((l) => l.id === langId);
-            if (lang) {
-              testStore.setState({
-                selectedLanguage: lang.id,
-                selectedLanguageBoilerPlate: lang.boilerplate,
-              });
-            }
+            resetProblemLanguage(selectedProblemId, langId);
           }}
         >
           {Languages.map((item) => (
@@ -107,6 +78,7 @@ function TestCodeEditor() {
             </option>
           ))}
         </select>
+
         <button
           className="btn btn-secondary"
           onClick={runCode}
@@ -119,8 +91,8 @@ function TestCodeEditor() {
 
       <Editor
         height="92.3vh"
-        language={selectedLanguage}
-        value={savedCode ?? selectedLanguageBoilerPlate}
+        language={languageId}
+        value={savedCode}
         onChange={handleEditorChange}
         theme="vs-dark"
         options={{
