@@ -12,6 +12,7 @@ import {
   User,
   Eye,
   EyeOff,
+  AlertCircle,
 } from "lucide-react";
 const yearOptions = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 import { trpc } from "@/lib/utils/trpc";
@@ -59,7 +60,7 @@ function TestUserSignUpPage() {
             enrollmentId: formData.enrollmentId,
             fullName: formData.fullName,
             year: formData.year,
-            role: 'test_user',
+            role: "test_user",
           },
           {
             onSuccess: () => {
@@ -80,92 +81,196 @@ function TestUserSignUpPage() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="flex flex-col w-[28vw] m-auto gap-3 justify-between items-center my-18 p-6 shadow-2xl"
-    >
-      <h1 className="text-2xl font-bold mb-3">Test User Sign Up</h1>
-
-      {/* Show form errors or success */}
-      {formError && (
-        <div className="alert alert-error w-full">
-          <span>{formError}</span>
+    <div className="min-h-screen flex items-center justify-center bg-base-200 px-4 py-10 font-sans">
+      <div className="card w-full max-w-5xl bg-base-100 shadow-xl overflow-hidden flex flex-col md:flex-row">
+        {/* Left Panel */}
+        <div className="md:w-1/2 bg-primary p-10 text-white flex items-center justify-center text-center">
+          <div>
+            <h1 className="text-3xl font-bold mb-4">Test User Sign Up</h1>
+            <p className="text-lg">
+              Create your test account and get instant access to the platform.
+            </p>
+          </div>
         </div>
-      )}
-      {formSuccess && (
-        <div className="alert alert-success w-full">
-          <span>{formSuccess}</span>
+
+        {/* Right Panel - Form */}
+        <div className="md:w-1/2 p-6 sm:p-8 overflow-y-auto max-h-[90vh]">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <h2 className="text-2xl font-bold text-primary text-center">
+              Register
+            </h2>
+
+            {/* Error / Success */}
+            {formError && (
+              <div className="alert alert-error bg-error/10 border-error text-error text-sm">
+                <AlertCircle className="h-5 w-5" />
+                <span>{formError}</span>
+              </div>
+            )}
+            {formSuccess && (
+              <div className="alert alert-success bg-success/10 border-success text-success text-sm">
+                <span>{formSuccess}</span>
+              </div>
+            )}
+
+            {/* Full Name */}
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text">Full Name</span>
+              </label>
+              <div className="join w-full">
+                <span className="join-item px-3 bg-base-200 flex items-center">
+                  <User className="w-5 h-5 text-primary" />
+                </span>
+                <input
+                  {...register("fullName")}
+                  placeholder="John Doe"
+                  className="input input-bordered join-item w-full"
+                />
+              </div>
+              {errors.fullName && (
+                <p className="text-error text-sm mt-1">
+                  {errors.fullName.message}
+                </p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text">Email</span>
+              </label>
+              <div className="join w-full">
+                <span className="join-item px-3 bg-base-200 flex items-center">
+                  <MailIcon className="w-5 h-5 text-primary" />
+                </span>
+                <input
+                  {...register("email")}
+                  type="email"
+                  placeholder="you@example.com"
+                  className="input input-bordered join-item w-full"
+                />
+              </div>
+              {errors.email && (
+                <p className="text-error text-sm mt-1">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            {/* Enrollment ID */}
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text">Enrollment ID</span>
+              </label>
+              <div className="join w-full">
+                <span className="join-item px-3 bg-base-200 flex items-center">
+                  <IdCardIcon className="w-5 h-5 text-primary" />
+                </span>
+                <input
+                  {...register("enrollmentId")}
+                  placeholder="123456"
+                  className="input input-bordered join-item w-full"
+                />
+              </div>
+              {errors.enrollmentId && (
+                <p className="text-error text-sm mt-1">
+                  {errors.enrollmentId.message}
+                </p>
+              )}
+            </div>
+
+            {/* Branch */}
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text">Branch</span>
+              </label>
+              <div className="join w-full">
+                <span className="join-item px-3 bg-base-200 flex items-center">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                </span>
+                <input
+                  {...register("branch")}
+                  placeholder="Computer Science"
+                  className="input input-bordered join-item w-full"
+                />
+              </div>
+              {errors.branch && (
+                <p className="text-error text-sm mt-1">
+                  {errors.branch.message}
+                </p>
+              )}
+            </div>
+
+            {/* Year */}
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text">Year</span>
+              </label>
+              <select
+                {...register("year")}
+                className="select select-bordered w-full"
+                defaultValue=""
+              >
+                <option disabled value="">
+                  Pick Current Year
+                </option>
+                {yearOptions.map((option, idx) => (
+                  <option key={idx}>{option}</option>
+                ))}
+              </select>
+              {errors.year && (
+                <p className="text-error text-sm mt-1">{errors.year.message}</p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text">Password</span>
+              </label>
+              <div className="join w-full">
+                <span className="join-item px-3 bg-base-200 flex items-center">
+                  <Lock className="w-5 h-5 text-primary" />
+                </span>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  {...register("password")}
+                  placeholder="••••••••"
+                  className="input input-bordered join-item w-full"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="btn join-item btn-square"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-error text-sm mt-1">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            {/* Submit */}
+            <button
+              className="btn btn-primary w-full text-lg"
+              type="submit"
+              disabled={addTestUserProfile.isPending}
+            >
+              {addTestUserProfile.isPending ? "Creating..." : "Sign Up"}
+            </button>
+          </form>
         </div>
-      )}
-
-      <label className="input">
-        <User /> Full Name
-        <input {...register("fullName")} />
-      </label>
-      {errors.fullName && (
-        <p className="text-red-500 text-sm">{errors.fullName.message}</p>
-      )}
-
-      <label className="input">
-        <MailIcon /> Email
-        <input {...register("email")} />
-      </label>
-      {errors.email && (
-        <p className="text-red-500 text-sm">{errors.email.message}</p>
-      )}
-
-      <label className="input">
-        <IdCardIcon /> Enrollment ID
-        <input {...register("enrollmentId")} />
-      </label>
-      {errors.enrollmentId && (
-        <p className="text-red-500 text-sm">{errors.enrollmentId.message}</p>
-      )}
-
-      <label className="input">
-        <BookOpen /> Branch
-        <input {...register("branch")} />
-      </label>
-      {errors.branch && (
-        <p className="text-red-500 text-sm">{errors.branch.message}</p>
-      )}
-
-      <select defaultValue="Year" className="select" {...register("year")}>
-        <option disabled>Pick Current Year</option>
-        {yearOptions.map((option, ind) => (
-          <option key={ind}>{option}</option>
-        ))}
-      </select>
-      {errors.year && (
-        <p className="text-red-500 text-sm">{errors.year.message}</p>
-      )}
-
-      <label className="input relative">
-        <Lock /> Password
-        <input
-          type={showPassword ? "text" : "password"}
-          {...register("password")}
-        />
-        <button
-          type="button"
-          onClick={() => setShowPassword((prev) => !prev)}
-          className="absolute right-3 top-1/2 transform -translate-y-1/2"
-        >
-          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-        </button>
-      </label>
-      {errors.password && (
-        <p className="text-red-500 text-sm">{errors.password.message}</p>
-      )}
-
-      <button
-        className="btn btn-primary w-1/2"
-        type="submit"
-        disabled={addTestUserProfile.isPending}
-      >
-        {addTestUserProfile.isPending ? "Creating..." : "Sign Up"}
-      </button>
-    </form>
+      </div>
+    </div>
   );
 }
 

@@ -52,53 +52,106 @@ function TestUserSignInPage() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="flex flex-col w-1/4 m-auto gap-5 justify-between items-center my-32 p-6 shadow-2xl"
-    >
-      <span className="text-2xl font-bold">Test User Sign In</span>
+    <div className="min-h-screen flex items-center justify-center bg-base-200 p-4 font-sans">
+      <div className="card w-full max-w-md bg-base-100 shadow-2xl border border-base-300">
+        <div className="card-body space-y-6">
+          {/* Header */}
+          <div className="flex flex-col items-center">
+            <div className="bg-primary/10 p-3 rounded-full mb-2">
+              <Lock className="h-6 w-6 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold text-primary-content">
+              Test User Sign In
+            </h2>
+            <p className="text-sm text-base-content/70 text-center">
+              Enter your credentials to access your dashboard
+            </p>
+          </div>
 
-      <div className="flex flex-col w-full">
-        <label className="input w-full">
-          <Mail /> Email
-          <input {...register("email")} className="w-full" />
-        </label>
-        {errors.email && <p className="text-error">{errors.email.message}</p>}
+          {/* Error Alert */}
+          {error && (
+            <div className="alert alert-error bg-error/10 text-error border-error text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 flex flex-col justify-center-safe items-center-safe p-6">
+            {/* Email */}
+            <div className="form-control w-[90%] ">
+              <label className="label">
+                <span className="label-text font-semibold">Email</span>
+              </label>
+              <label className="input input-bordered flex items-center gap-2">
+                <Mail className="w-5 h-5 text-primary" />
+                <input
+                  {...register("email")}
+                  type="email"
+                  placeholder="name@example.com"
+                  className="grow"
+                  disabled={loading}
+                />
+              </label>
+              {errors.email && (
+                <p className="text-error text-sm mt-1">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="form-control w-[90%]  relative ">
+              <label className="label">
+                <span className="label-text font-semibold">Password</span>
+              </label>
+              <label className="input input-bordered flex items-center gap-2">
+                <Lock className="w-5 h-5 text-primary" />
+                <input
+                  {...register("password")}
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="grow"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="btn btn-ghost btn-xs"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </label>
+              {errors.password && (
+                <p className="text-error text-sm mt-1">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              className="btn btn-primary w-full"
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="animate-spin" size={18} /> Signing In...
+                </span>
+              ) : (
+                "Sign In"
+              )}
+            </button>
+          </form>
+        </div>
       </div>
-
-      <div className="flex flex-col w-full relative">
-        <label className="input w-full">
-          <Lock /> Password
-          <input
-            {...register("password")}
-            type={showPassword ? "text" : "password"}
-            className="w-full"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2"
-          >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        </label>
-        {errors.password && (
-          <p className="text-error">{errors.password.message}</p>
-        )}
-      </div>
-
-      <button className="btn btn-primary w-full" disabled={loading}>
-        {loading ? (
-          <span className="flex items-center gap-2">
-            <Loader2 className="animate-spin" size={18} /> Signing In...
-          </span>
-        ) : (
-          "Sign In"
-        )}
-      </button>
-
-      {error && <span className="text-error">{error}</span>}
-    </form>
+    </div>
   );
 }
 
