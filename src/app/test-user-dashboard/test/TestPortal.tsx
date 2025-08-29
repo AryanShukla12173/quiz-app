@@ -5,19 +5,23 @@ import TestCodeEditor from "@/components/editor";
 import TestTabs from "@/components/Tabs";
 import { trpc } from "@/lib/utils/trpc";
 import { testStore } from "@/store/testEditorStore";
-
-function TestPortal() {
+import { TestTimer } from "@/components/testTimer";
+import { useRouter } from "next/navigation";
+type TestPortalProps = {
+  testId : string
+}
+function TestPortal({testId}: TestPortalProps) {
   const fetchTestData = trpc.fetchTestData.useQuery;
   const { data, isSuccess } = fetchTestData(
-    "2ef3d709-93bf-48c0-ac53-798ae42dd6ad"
+    testId
   );
-
+  const router = useRouter();
   // Store values
   const selectedProblemId = testStore((state) => state.selectedProblemId);
   const problems = testStore((state) => state.problems);
   const setSelectedProblemId = testStore((state) => state.setSelectedProblemId);
   const setActiveTab = testStore((state) => state.setActiveTab);
-
+  const stopTimer = testStore((state)=>state.stopTimer)
   useEffect(() => {
     if (isSuccess && data?.problem) {
       // Load problems into store
@@ -27,8 +31,11 @@ function TestPortal() {
       if (!selectedProblemId && data.problem.length > 0) {
         setSelectedProblemId(data.problem[0].id);
       }
+      if (data.testDuration && !testStore.getState().isTimerRunning) {
+        testStore.getState().startTimer(data.testDuration * 60);
+      }
     }
-  }, [isSuccess, data?.problem, selectedProblemId, setSelectedProblemId]);
+  }, [isSuccess, data?.problem, selectedProblemId, setSelectedProblemId,data?.testDuration]);
 
   // Get testcases for the selected problem
   const selectedProblem = problems.find((p) => p.id === selectedProblemId);
@@ -43,6 +50,10 @@ function TestPortal() {
 
   const { mutate: executeCodeBatch } = trpc.executeCodeBatch.useMutation();
 
+  const finishTest = () => {
+    stopTimer()
+    router.replace("/test-user-dashboard/analytics");
+  };
   const runCodeBatch = async () => {
     const codeContent = savedProblem?.code ?? "";
 
@@ -87,9 +98,20 @@ function TestPortal() {
         <div className="navbar-start">
           <span className="text-2xl text-blue-400 font-bold">QuizApp</span>
         </div>
-        <div className="navbar-end">
-          <button className="btn btn-primary" onClick={runCodeBatch}>
+        <div className="navbar-center">
+          {data?.testDuration && (
+            <TestTimer
+              durationSeconds={data.testDuration * 60}
+              onTimeUp={finishTest}
+            />
+          )}
+        </div>
+        <div className="navbar-end gap-3">
+          <button className="btn btn-neutral" onClick={runCodeBatch}>
             Submit
+          </button>
+          <button className="btn btn-primary" onClick={finishTest}>
+            Finish
           </button>
         </div>
       </nav>

@@ -59,7 +59,7 @@ export const codeTests = pgTable("code_tests", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-  userId: uuid("user_id").notNull(),
+  userId: uuid("user_id").notNull().references(() => testAdminUserProfileTable.user_id)
 });
 
 export const problems = pgTable("problems", {

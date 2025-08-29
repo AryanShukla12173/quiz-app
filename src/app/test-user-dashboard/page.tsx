@@ -2,19 +2,11 @@
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/utils/supabase/client";
 import Link from "next/link";
-import { ChartBar } from "lucide-react";
 import z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-const navItems = [
-  {
-    id: 1,
-    name: "Analytics",
-    icon: <ChartBar />,
-    href: "/test-user-dashboard",
-  },
-];
+import { testUserDashboardNavItems } from "@/lib/constants";
 
 function UserPage() {
   const supabase = createClient();
@@ -55,7 +47,7 @@ function UserPage() {
         setSubmissionMessage("Test does not exist.");
         return;
       }
-
+      router.replace(`/test-user-dashboard/test/${test_id}`)
       setSubmissionMessage("Test exists! You can start the test.");
     } catch (err) {
       setSubmissionMessage("An unexpected error occurred.");
@@ -94,13 +86,12 @@ function UserPage() {
           QuizApp
         </span>
         <div className="navbar-end gap-3 items-center">
-          {navItems.map((item) => (
+          {testUserDashboardNavItems.map((item) => (
             <Link
               href={item.href}
               className="flex flex-row gap-2 font-bold text-md"
               key={item.id}
             >
-              {item.icon}
               {item.name}
             </Link>
           ))}

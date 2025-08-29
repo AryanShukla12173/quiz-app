@@ -21,62 +21,6 @@ export const navItems = [
   },
 ];
 
-export const mockTests = [
-  {
-    testTitle: "Intermediate Algorithms Test",
-    testDescription: "Focuses on slightly more complex algorithmic problems.",
-    testDuration: 45,
-    problem: [
-      {
-        title: "Factorial",
-        description: "Return the factorial of a given number n.",
-        score: 20,
-        testcases: [
-          {
-            input: "5",
-            expectedOutput: "120",
-            description: "Normal case",
-            hidden: false,
-          },
-          {
-            input: "0",
-            expectedOutput: "1",
-            description: "Factorial of 0",
-            hidden: false,
-          },
-          {
-            input: "10",
-            expectedOutput: "3628800",
-            hidden: true,
-          },
-        ],
-      },
-      {
-        title: "Check Prime",
-        description: "Return true if the number is prime, otherwise false.",
-        score: 25,
-        testcases: [
-          {
-            input: "7",
-            expectedOutput: "true",
-            hidden: false,
-          },
-          {
-            input: "10",
-            expectedOutput: "false",
-            hidden: false,
-          },
-          {
-            input: "97",
-            expectedOutput: "true",
-            hidden: true,
-          },
-        ],
-      },
-    ],
-  },
-];
-
 export const Languages = [
   {
     id: "java",
@@ -130,3 +74,10 @@ export const languageExtensions: Record<string, string> = {
   cpp: "cpp",
   // add more languages if needed
 };
+export  const testUserDashboardNavItems = [
+  {
+    id: 1,
+    name: "Analytics",
+    href: "/test-user-dashboard/analytics",
+  },
+];

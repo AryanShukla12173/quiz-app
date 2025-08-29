@@ -1,7 +1,7 @@
 // create a instance of the router defined in trpc.ts
 import "dotenv/config";
 import { db } from "@/lib/drizzle/src";
-import { eq } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import {
   user_admin_profile_schema,
   codeTestSchema,
@@ -22,9 +22,31 @@ import {
   userProblemResults,
 } from "@/lib/drizzle/src/db/schema";
 import { router, publicProcedure } from "@/server/trpc";
-
 import { TRPCError } from "@trpc/server";
 import z from "zod";
+type LeaderboardEntry = {
+  userId: string;
+  fullName: string | null;
+  enrollmentId: string | null;
+  branch: string | null;
+  year: string | null;
+  totalScore: number;
+  totalPossibleScore: number;
+  scorePercentage: number;
+  problemsAttempted: number;
+  totalProblems: number;
+  correctTestCases: number;
+  totalTestCases: number;
+  lastSubmissionTime: Date;
+};
+type TestCaseResult = {
+  hidden: boolean;
+  actualInput: string;
+  actualOutput: string;
+  correctOutput: boolean;
+  testCaseInput: string;
+  testCaseOutput: string;
+};
 export const appRouter = router({
   createProfile: publicProcedure
     .input(user_admin_profile_schema)
@@ -280,7 +302,7 @@ export const appRouter = router({
           code: "UNAUTHORIZED",
         });
       }
-      console.log("Input to Fetch Call:", input.input);
+      // console.log("Input to Fetch Call:", input.input);
       const res = await fetch(
         "https://onecompiler-apis.p.rapidapi.com/api/v1/run",
         {
@@ -300,9 +322,9 @@ export const appRouter = router({
         });
       }
       const data: batchCodeExecutionResult = await res.json();
-      console.log("OneCompiler Result:", data);
+      // console.log("OneCompiler Result:", data);
       const testcases = input.testcases;
-      console.log("testcases:", testcases);
+      // console.log("testcases:", testcases);
       const result: testCaseExecutionResult = {
         problem_id: input.problemId,
         problem_result: [],
@@ -330,7 +352,7 @@ export const appRouter = router({
           }
         });
       });
-      console.log("Result:", result);
+      // console.log("Result:", result);
       await db
         .insert(userProblemResults)
         .values({
@@ -347,6 +369,306 @@ export const appRouter = router({
           },
         });
       return result;
+    }),
+  getTestLeaderboard: publicProcedure
+    .input(
+      z.object({
+        testId: z.string().uuid("Invalid test ID format"),
+      })
+    )
+    .query(async ({ input }): Promise<LeaderboardEntry[]> => {
+      const { testId } = input;
+
+      // First, verify the test exists and get all problems for this test
+      const testProblems = await db
+        .select({
+          problemId: problems.id,
+          problemScore: problems.score,
+        })
+        .from(problems)
+        .where(eq(problems.codeTestId, testId));
+
+      if (testProblems.length === 0) {
+        throw new Error("Test not found or has no problems");
+      }
+
+      const totalPossibleScore = testProblems.reduce(
+        (sum, problem) => sum + problem.problemScore,
+        0
+      );
+
+      // Get all user results for this test's problems
+      const userResults = await db
+        .select({
+          userId: userProblemResults.userId,
+          problemId: userProblemResults.problemId,
+          executionResults: userProblemResults.executionResults,
+          lastSubmittedAt: userProblemResults.lastSubmittedAt,
+          problemScore: problems.score,
+          userFullName: testUserProfileTable.fullName,
+          userEnrollmentId: testUserProfileTable.enrollment_id,
+          userBranch: testUserProfileTable.branch,
+          userYear: testUserProfileTable.year,
+        })
+        .from(userProblemResults)
+        .innerJoin(problems, eq(userProblemResults.problemId, problems.id))
+        .innerJoin(
+          testUserProfileTable,
+          eq(userProblemResults.userId, testUserProfileTable.user_id)
+        )
+        .where(eq(problems.codeTestId, testId));
+
+      // Group results by user and calculate scores
+      const userScoreMap = new Map<
+        string,
+        {
+          user: {
+            userId: string;
+            fullName: string | null;
+            enrollmentId: string | null;
+            branch: string | null;
+            year: string | null;
+          };
+          problemResults: Map<
+            string,
+            {
+              score: number;
+              maxScore: number;
+              correctTestCases: number;
+              totalTestCases: number;
+              lastSubmitted: Date;
+            }
+          >;
+          lastSubmissionTime: Date;
+        }
+      >();
+
+      // Process each user's results
+      for (const result of userResults) {
+        const userId = result.userId;
+
+        if (!userScoreMap.has(userId)) {
+          userScoreMap.set(userId, {
+            user: {
+              userId: result.userId,
+              fullName: result.userFullName,
+              enrollmentId: result.userEnrollmentId,
+              branch: result.userBranch,
+              year: result.userYear,
+            },
+            problemResults: new Map(),
+            lastSubmissionTime: result.lastSubmittedAt,
+          });
+        }
+
+        const userEntry = userScoreMap.get(userId)!;
+
+        // Update last submission time
+        if (result.lastSubmittedAt > userEntry.lastSubmissionTime) {
+          userEntry.lastSubmissionTime = result.lastSubmittedAt;
+        }
+
+        // Calculate score for this problem based on test case results
+        const testCaseResults = result.executionResults as TestCaseResult[];
+        const correctTestCases = testCaseResults.filter(
+          (tc) => tc.correctOutput
+        ).length;
+        const totalTestCases = testCaseResults.length;
+
+        // Score calculation: (correct test cases / total test cases) * max problem score
+        const scorePercentage =
+          totalTestCases > 0 ? correctTestCases / totalTestCases : 0;
+        const earnedScore = Math.round(scorePercentage * result.problemScore);
+
+        userEntry.problemResults.set(result.problemId, {
+          score: earnedScore,
+          maxScore: result.problemScore,
+          correctTestCases,
+          totalTestCases,
+          lastSubmitted: result.lastSubmittedAt,
+        });
+      }
+
+      // Convert to leaderboard entries and calculate totals
+      const leaderboardEntries: LeaderboardEntry[] = Array.from(
+        userScoreMap.entries()
+      ).map(([, userData]) => {
+        const problemResultsArray = Array.from(
+          userData.problemResults.values()
+        );
+
+        const totalScore = problemResultsArray.reduce(
+          (sum, problemResult) => sum + problemResult.score,
+          0
+        );
+
+        const totalCorrectTestCases = problemResultsArray.reduce(
+          (sum, problemResult) => sum + problemResult.correctTestCases,
+          0
+        );
+
+        const totalTestCases = problemResultsArray.reduce(
+          (sum, problemResult) => sum + problemResult.totalTestCases,
+          0
+        );
+
+        const scorePercentage =
+          totalPossibleScore > 0 ? (totalScore / totalPossibleScore) * 100 : 0;
+
+        return {
+          userId: userData.user.userId,
+          fullName: userData.user.fullName,
+          enrollmentId: userData.user.enrollmentId,
+          branch: userData.user.branch,
+          year: userData.user.year,
+          totalScore,
+          totalPossibleScore,
+          scorePercentage: Math.round(scorePercentage * 100) / 100, // Round to 2 decimal places
+          problemsAttempted: userData.problemResults.size,
+          totalProblems: testProblems.length,
+          correctTestCases: totalCorrectTestCases,
+          totalTestCases: totalTestCases,
+          lastSubmissionTime: userData.lastSubmissionTime,
+        };
+      });
+
+      // Sort leaderboard by total score (descending), then by score percentage, then by submission time
+      leaderboardEntries.sort((a, b) => {
+        if (a.totalScore !== b.totalScore) {
+          return b.totalScore - a.totalScore; // Higher score first
+        }
+        if (a.scorePercentage !== b.scorePercentage) {
+          return b.scorePercentage - a.scorePercentage; // Higher percentage first
+        }
+        // Earlier submission time first (faster completion)
+        return a.lastSubmissionTime.getTime() - b.lastSubmissionTime.getTime();
+      });
+
+      return leaderboardEntries;
+    }),
+  getAllTestsAttemptedByUser: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.user) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+      });
+    }
+    const results = await db
+      .select({
+        testId: codeTests.id,
+        testTitle: codeTests.testTitle,
+        testDescription: codeTests.testDescription,
+        testDuration: codeTests.testDuration,
+        // Calculate the total score for the test by summing up scores of submitted problems.
+        totalScore: sql<number>`sum(${problems.score})`.mapWith(Number),
+        // Find the most recent submission time for the test.
+        lastSubmittedAt: sql<string>`max(${userProblemResults.lastSubmittedAt})`,
+      })
+      .from(userProblemResults)
+      .innerJoin(problems, eq(userProblemResults.problemId, problems.id))
+      .innerJoin(codeTests, eq(problems.codeTestId, codeTests.id))
+      .where(eq(userProblemResults.userId, ctx.user.id))
+      // Group by test details to ensure each test appears only once.
+      .groupBy(
+        codeTests.id,
+        codeTests.testTitle,
+        codeTests.testDescription,
+        codeTests.testDuration
+      );
+    if (results.length === 0) {
+      return [];
+    }
+    return results;
+  }),
+  getLeaderboardByTestId: publicProcedure
+    .input(
+      z.object({
+        // Input validation using Zod. Expects a UUID for the code test.
+        codeTestId: z.string().uuid("Invalid Code Test ID"),
+      })
+    )
+    .query(async ({ input }) => {
+      // This is the main resolver function for the tRPC query.
+      // It takes the validated input and context (db connection) to perform the logic.
+
+      try {
+        // Step 1: Find all problems associated with the given codeTestId.
+        // This is necessary to know which problem results to fetch.
+        const associatedProblems = await db
+          .select({
+            id: problems.id,
+          })
+          .from(problems)
+          .where(eq(problems.codeTestId, input.codeTestId));
+
+        // If no problems are found for the test, return an empty leaderboard.
+        if (associatedProblems.length === 0) {
+          return [];
+        }
+
+        // Extract the problem IDs into an array for the next query.
+        const problemIds = associatedProblems.map((p) => p.id);
+
+        // Step 2: Fetch all user problem results for the identified problems.
+        // This query joins the results with the problems table (to get scores)
+        // and the user profile table (to get user details).
+        const results = await db
+          .select({
+            userId: userProblemResults.userId,
+            fullName: testUserProfileTable.fullName,
+            enrollmentId: testUserProfileTable.enrollment_id,
+            score: problems.score,
+          })
+          .from(userProblemResults)
+          .innerJoin(problems, eq(userProblemResults.problemId, problems.id))
+          .innerJoin(
+            testUserProfileTable,
+            eq(userProblemResults.userId, testUserProfileTable.user_id)
+          )
+          .where(inArray(userProblemResults.problemId, problemIds));
+
+        // Step 3: Process the raw results to compute total scores for each user.
+        // We use a Map to efficiently group scores by userId.
+        const userScores = new Map<
+          string,
+          {
+            fullName: string | null;
+            enrollmentId: string | null;
+            totalScore: number;
+          }
+        >();
+
+        for (const result of results) {
+          // If the user is already in our map, add the score to their total.
+          if (userScores.has(result.userId)) {
+            const currentUser = userScores.get(result.userId)!;
+            currentUser.totalScore += result.score;
+          } else {
+            // If it's a new user, add them to the map with their first score.
+            userScores.set(result.userId, {
+              fullName: result.fullName,
+              enrollmentId: result.enrollmentId,
+              totalScore: result.score,
+            });
+          }
+        }
+
+        // Step 4: Convert the Map into an array and sort it to create the leaderboard.
+        // The array is sorted by totalScore in descending order.
+        const leaderboard = Array.from(userScores.entries())
+          .map(([userId, data]) => ({
+            userId,
+            ...data,
+          }))
+          .sort((a, b) => b.totalScore - a.totalScore);
+
+        // Step 5: Add a 'rank' to each entry in the sorted leaderboard.
+        return leaderboard.map((entry, index) => ({
+          rank: index + 1,
+          ...entry,
+        }));
+      } catch (error) {
+        throw new Error(JSON.stringify(error));
+      }
     }),
 });
 
