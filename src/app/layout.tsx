@@ -1,20 +1,21 @@
-// app/layout.tsx
-import { AuthProvider } from '@/context/AuthContext';
-import '@/app/globals.css'; // Tailwind styles, etc.
-
-export const metadata = {
-  title: 'Quiz App',
-  description: 'A platform for generating and ',
+import type { Metadata } from "next";
+import "./globals.css";
+import { TRPCProvider } from "@/components/trpcProvider";
+export const metadata: Metadata = {
+  title: "Quiz App",
+  description: "Website for creating tests and administering them to users",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en">
-      <body className="bg-background text-foreground min-h-screen">
-        <AuthProvider>
-          {children} {/* This renders your dashboard or other pages */}
-        </AuthProvider>
+      <body>
+        <TRPCProvider>{children}</TRPCProvider>
       </body>
     </html>
   );
-}
+} 
