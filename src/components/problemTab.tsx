@@ -13,7 +13,7 @@ function  ProblemTab() {
   const testcase = problem.testcases?.[0];
 
   return (
-    <div className="flex flex-col gap-5 p-6 bg-base-200 border border h-full">
+    <div className="flex flex-col gap-5 p-6 bg-base-200 border  h-full">
       {/* Title */}
       <div>
         <div className="mb-3 inline-flex rounded-full border border-emerald-200 bg-base-100 px-3 py-1 text-xs font-medium text-emerald-700">
