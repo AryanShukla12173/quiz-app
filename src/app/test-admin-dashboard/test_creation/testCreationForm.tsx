@@ -7,7 +7,15 @@ import {
   UseFormRegister,
   FieldErrors,
 } from "react-hook-form";
-import { Loader2, Plus, Trash2, X } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  FileCode2,
+  Loader2,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 import { CodeTestInput } from "@/lib/schemas/data_schemas";
 import { trpc } from "@/lib/utils/trpc";
 function TestCreationPage() {
@@ -57,29 +65,41 @@ function TestCreationPage() {
   };
 
   return (
-    <div className="min-h-screen w-screen bg-base-200 overflow-auto">
-      <div className="max-w-screen mx-auto card bg-base-100 shadow-md p-6">
-        <h1 className="text-2xl font-bold mb-6">Create New Coding Test</h1>
+    <main className="min-h-screen w-full overflow-auto bg-slate-100 p-6">
+      <div className="mx-auto max-w-5xl">
+        <header className="mb-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-3 flex items-center gap-2 text-slate-900">
+            <FileCode2 className="h-6 w-6" />
+            <span className="text-sm font-semibold uppercase">Test Builder</span>
+          </div>
+          <h1 className="text-3xl font-semibold text-slate-950">Create New Coding Test</h1>
+          <p className="mt-2 text-slate-600">
+            Add the test details, create at least one problem, then add visible
+            or hidden test cases.
+          </p>
+        </header>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* --- Success/Error Messages --- */}
           {isSuccess && (
             <div className="alert alert-success text-sm">
-              ✅ Test created successfully!
+              <CheckCircle2 className="h-4 w-4" />
+              Test created successfully.
             </div>
           )}
           {isError && (
             <div className="alert alert-error text-sm">
-              ❌ {error?.message || "Something went wrong"}
+              <AlertCircle className="h-4 w-4" />
+              {error?.message || "Something went wrong"}
             </div>
           )}
 
           {/* --- Test Information --- */}
-          <div className="card bg-base-200 p-4">
+          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold mb-4">Test Information</h2>
-            <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
               {/* Title */}
-              <div className="form-control">
+              <div className="form-control md:col-span-2">
                 <label className="label">
                   <span className="label-text">Test Title *</span>
                 </label>
@@ -98,7 +118,7 @@ function TestCreationPage() {
               </div>
 
               {/* Description */}
-              <div className="form-control">
+              <div className="form-control md:col-span-2">
                 <label className="label">
                   <span className="label-text">Test Description</span>
                 </label>
@@ -136,12 +156,17 @@ function TestCreationPage() {
                 )}
               </div>
             </div>
-          </div>
+          </section>
 
           {/* --- Problems Section --- */}
-          <div className="card bg-base-200 p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Problems</h2>
+          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Problems</h2>
+                <p className="text-sm text-base-content/60">
+                  {problemFields.length} added
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={addNewProblem}
@@ -175,11 +200,15 @@ function TestCreationPage() {
                 At least one problem is required
               </p>
             )}
-          </div>
+          </section>
 
           {/* --- Submit Button --- */}
-          <div className="flex justify-end gap-4 pt-6 border-t">
-            <button type="button" className="btn btn-outline">
+          <div className="sticky bottom-0 flex justify-end gap-4 border-t border-slate-200 bg-slate-100/95 py-4 backdrop-blur">
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => reset()}
+            >
               Cancel
             </button>
             <button
@@ -193,7 +222,7 @@ function TestCreationPage() {
           </div>
         </form>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -234,9 +263,9 @@ function ProblemForm({
   const problemErrors = errors.problem?.[problemIndex];
 
   return (
-    <div className="card bg-base-100 border border-base-300 p-4 mb-4">
-      <div className="flex justify-between items-start mb-4">
-        <h3 className="text-md font-medium">Problem {problemIndex + 1}</h3>
+    <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div className="mb-4 flex items-start justify-between">
+        <h3 className="text-md font-semibold">Problem {problemIndex + 1}</h3>
         <button
           type="button"
           onClick={onRemove}
@@ -319,9 +348,9 @@ function ProblemForm({
           {testCaseFields.map((testCaseField, testCaseIndex) => (
             <div
               key={testCaseField.id}
-              className="card bg-base-200 border border-base-300 p-3 mb-3 flex  gap-3"
+              className="mb-3 rounded-lg border border-slate-200 bg-white p-3"
             >
-              <div className="flex justify-between items-start mb-3">
+              <div className="mb-3 flex items-start justify-between">
                 <h5 className="text-sm font-medium">
                   Test Case {testCaseIndex + 1}
                 </h5>
@@ -334,7 +363,7 @@ function ProblemForm({
                 </button>
               </div>
 
-              <div className="flex flex-col  gap-3">
+              <div className="grid gap-3 md:grid-cols-2">
                 <div className="flex flex-col">
                   <label className="label">
                     <span className="label-text">Input *</span>
@@ -370,7 +399,7 @@ function ProblemForm({
               </div>
 
               <div className="form-control mt-3">
-                <label className="label cursor-pointer">
+                <label className="label cursor-pointer justify-start">
                   <input
                     type="checkbox"
                     {...register(

@@ -74,9 +74,14 @@ export const languageExtensions: Record<string, string> = {
   cpp: "cpp",
   // add more languages if needed
 };
-export  const testUserDashboardNavItems = [
+export const testUserDashboardNavItems = [
   {
     id: 1,
+    name: "Dashboard",
+    href: "/test-user-dashboard",
+  },
+  {
+    id: 2,
     name: "Analytics",
     href: "/test-user-dashboard/analytics",
   },

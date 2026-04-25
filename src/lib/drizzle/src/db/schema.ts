@@ -7,6 +7,7 @@ import {
   timestamp,
   boolean,
   jsonb,
+  unique,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm/relations";
 import { sql } from "drizzle-orm";
@@ -22,6 +23,19 @@ export const yearEnum = pgEnum("year", [
   "3rd Year",
   "4th Year",
 ]);
+
+export const authUsersTable = pgTable("auth_users", {
+  id: uuid("id")
+    .default(sql`gen_random_uuid()`)
+    .primaryKey(),
+  email: text("email").unique().notNull(),
+  passwordHash: text("password_hash").notNull(),
+  role: userRoleEnum("role").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 export const testAdminUserProfileTable = pgTable("test_admin_profile", {
   user_id: uuid("id")
     .default(sql`gen_random_uuid()`)
@@ -86,21 +100,30 @@ export const testCases = pgTable("test_cases", {
   hidden: boolean("hidden").default(false).notNull(),
 });
 // Stores the user's execution results for a problem
-export const userProblemResults = pgTable("user_problem_results", {
-  id: uuid("id")
-    .default(sql`gen_random_uuid()`)
-    .primaryKey(),
-  userId: uuid("user_id")
-    .references(() => testUserProfileTable.user_id, { onDelete: "cascade" })
-    .notNull(),
-  problemId: uuid("problem_id")
-    .references(() => problems.id, { onDelete: "cascade" })
-    .notNull(),
-  executionResults: jsonb("execution_results").notNull(), // array of test case results
-  lastSubmittedAt: timestamp("last_submitted_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const userProblemResults = pgTable(
+  "user_problem_results",
+  {
+    id: uuid("id")
+      .default(sql`gen_random_uuid()`)
+      .primaryKey(),
+    userId: uuid("user_id")
+      .references(() => testUserProfileTable.user_id, { onDelete: "cascade" })
+      .notNull(),
+    problemId: uuid("problem_id")
+      .references(() => problems.id, { onDelete: "cascade" })
+      .notNull(),
+    executionResults: jsonb("execution_results").notNull(), // array of test case results
+    lastSubmittedAt: timestamp("last_submitted_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    unique("user_problem_results_user_id_problem_id_unique").on(
+      table.userId,
+      table.problemId
+    ),
+  ]
+);
 
 // Relations between Tables
 

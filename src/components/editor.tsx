@@ -12,7 +12,10 @@ function TestCodeEditor() {
   const savedProblem = codeMap.find((c) => c.problemId === selectedProblemId);
 
   const languageId = savedProblem?.languageId ?? Languages[0].id;
-  const savedCode = savedProblem?.code ?? Languages.find((l) => l.id === languageId)?.boilerplate ?? "";
+  const savedCode =
+    savedProblem?.code ??
+    Languages.find((l) => l.id === languageId)?.boilerplate ??
+    "";
   const ext = languageExtensions[languageId] || "txt";
 
   const updateProblemCode = testStore((state) => state.updateProblemCode);
@@ -62,35 +65,10 @@ function TestCodeEditor() {
   };
 
   return (
-    <div className="border">
-      <div className="p-2 w-[50vw] flex flex-row gap-3 bg-base-300 justify-end items-center">
-        <select
-          className="select w-1/6"
-          value={languageId}
-          onChange={(e) => {
-            const langId = e.target.value;
-            resetProblemLanguage(selectedProblemId, langId);
-          }}
-        >
-          {Languages.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-
-        <button
-          className="btn btn-secondary"
-          onClick={runCode}
-          disabled={isPending}
-        >
-          <Play />
-          {isPending ? "Running..." : "Run"}
-        </button>
-      </div>
+    <section className="flex h-full min-w-0 overflow-hidden rounded-lg border border-slate-800 bg-base-100 shadow-sm p-5">
 
       <Editor
-        height="92.3vh"
+        height="100%"
         language={languageId}
         value={savedCode}
         onChange={handleEditorChange}
@@ -99,9 +77,10 @@ function TestCodeEditor() {
           automaticLayout: true,
           wordWrap: "on",
           fontSize: 16,
+          minimap: { enabled: false },
         }}
       />
-    </div>
+    </section>
   );
 }
 

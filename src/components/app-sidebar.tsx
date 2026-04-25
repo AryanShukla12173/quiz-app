@@ -1,5 +1,5 @@
 "use client";
-import { Home, User, ShieldCheck, LogOutIcon } from "lucide-react";
+import { ClipboardList, FileCode2, Home, LogOutIcon, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
 import {
   Sidebar,
@@ -26,28 +26,31 @@ const items = [
   {
     title: "Test User List",
     url: "/test-admin-dashboard/test-user-list",
-    icon: User,
+    icon: Users,
   },
   {
     title: "Create Code Test",
     url: "/test-admin-dashboard/test_creation",
-    icon: User,
+    icon: FileCode2,
   },
   {
     title: "Created Tests",
     url: "/test-admin-dashboard/test-display",
-    icon: User,
+    icon: ClipboardList,
   },
 ];
-import { createClient } from "@/lib/utils/supabase/client";
-import { redirect } from "next/navigation";
+import { clearAuthSession } from "@/lib/auth/session";
+import { usePathname, useRouter } from "next/navigation";
+
 export function AppSidebar() {
-  const supabase = createClient();
+  const router = useRouter();
+  const pathname = usePathname();
+
   return (
-    <Sidebar className="bg-base-200 min-h-screen w-64 text-base-content">
+    <Sidebar className="min-h-screen w-64 border-r border-slate-200 bg-white text-slate-900">
       <SidebarContent className="p-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-2xl font-bold mb-6 px-2">
+          <SidebarGroupLabel className="mb-6 px-2 text-2xl font-semibold text-slate-950">
             Quiz App
           </SidebarGroupLabel>
           <SidebarGroupContent className="">
@@ -57,7 +60,11 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <Link
                       href={item.url}
-                      className="flex items-center gap-4 text-lg font-medium hover:bg-base-300 rounded-lg py-3 px-3 transition-colors"
+                      className={`flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors ${
+                        pathname === item.url
+                          ? "bg-slate-950 text-white"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                      }`}
                     >
                       <item.icon className="w-6 h-6" />
                       <span>{item.title}</span>
@@ -68,10 +75,10 @@ export function AppSidebar() {
               <SidebarMenuItem className="">
                 <SidebarMenuButton
                   onClick={() => {
-                    supabase.auth.signOut();
-                    redirect("/");
+                    clearAuthSession();
+                    router.replace("/");
                   }}
-                  className="btn"
+                  className="btn mt-4 border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
                 >
                   <LogOutIcon />
                   Logout

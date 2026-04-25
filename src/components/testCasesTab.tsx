@@ -15,7 +15,14 @@ function TestCaseTab() {
   ).filter((item) => item.problem_id === selectedProblemId);
 
   return (
-    <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 p-6">
+    <div className="p-4">
+      <div className="mb-4">
+        <h2 className="font-semibold text-white">Submission Results</h2>
+        <p className="text-sm text-slate-500">
+          Results appear after submitting the current problem.
+        </p>
+      </div>
+      <div className="overflow-x-auto rounded-lg border border-slate-200">
       <table className="table">
         {/* head */}
         <thead>
@@ -32,13 +39,17 @@ function TestCaseTab() {
 
               return (
                 <tr key={idx}>
-                  <td>{idx + 1}</td>
+                  <td className="text-white">{idx + 1}</td>
                   <td className={execResult?.correctOutput ? "text-success" : "text-error"}>
-                    {execResult?.correctOutput ? "Passed" : "Failed"}
+                    {execResult
+                      ? execResult.correctOutput
+                        ? "Passed"
+                        : "Failed"
+                      : "Not submitted"}
                   </td>
                   <td>
                     <button
-                      className="btn btn-ghost btn-xs"
+                      className="btn btn-warning btn-xs"
                       onClick={() => {
                         const modal = document.getElementById(
                           `modal_${idx}`
@@ -48,7 +59,7 @@ function TestCaseTab() {
                     >
                       <Eye />
                     </button>
-                    <dialog id={`modal_${idx}`} className="modal">
+                    <dialog id={`modal_${idx}`} className="modal text-white">
                       <div className="modal-box">
                         <h3 className="font-bold">Test Case Info</h3>
                         <div className="space-y-2 text-sm">
@@ -76,6 +87,7 @@ function TestCaseTab() {
             })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

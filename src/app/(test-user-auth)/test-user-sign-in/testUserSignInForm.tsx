@@ -6,7 +6,8 @@ import { signInSchema } from "@/lib/schemas/formschemas";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Lock, Mail, Loader2 } from "lucide-react";
-import { createClient } from "@/lib/utils/supabase/client";
+import { trpc } from "@/lib/utils/trpc";
+import { setAuthSession } from "@/lib/auth/session";
 
 function TestUserSignInPage() {
   const {
@@ -20,47 +21,43 @@ function TestUserSignInPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const supabase = createClient();
+  const login = trpc.login.useMutation();
   const router = useRouter();
 
   const onSubmit = async (formData: z.infer<typeof signInSchema>) => {
     setLoading(true);
     setError("");
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const data = await login.mutateAsync({
         email: formData.email,
         password: formData.password,
       });
 
-      if (error) {
-        setError(error.message);
-        setLoading(false);
+      if (data.user.role !== "test_user") {
+        setError("This account is not a test user account.");
         return;
       }
 
-      if (data?.user) {
-        router.replace("/test-user-dashboard");
-      } else {
-        setError("No user found. Please try again.");
-      }
+      setAuthSession(data.token);
+      router.replace("/test-user-dashboard");
     } catch (err) {
       console.error(err);
-      setError("Unexpected error during Sign In.");
+      setError(err instanceof Error ? err.message : "Unexpected error during Sign In.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200 p-4 font-sans">
-      <div className="card w-full max-w-md bg-base-100 shadow-2xl border border-base-300">
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4 font-sans">
+      <div className="card w-full max-w-md border border-slate-200 bg-white shadow-2xl">
         <div className="card-body space-y-6">
           {/* Header */}
           <div className="flex flex-col items-center">
-            <div className="bg-primary/10 p-3 rounded-full mb-2">
-              <Lock className="h-6 w-6 text-primary" />
+            <div className="mb-2 rounded-full bg-slate-100 p-3">
+              <Lock className="h-6 w-6 text-slate-700" />
             </div>
-            <h2 className="text-2xl font-bold text-primary-content">
+            <h2 className="text-2xl font-semibold text-slate-950">
               Test User Sign In
             </h2>
             <p className="text-sm text-base-content/70 text-center">
@@ -83,12 +80,12 @@ function TestUserSignInPage() {
                 <span className="label-text font-semibold">Email</span>
               </label>
               <label className="input input-bordered flex items-center gap-2">
-                <Mail className="w-5 h-5 text-primary" />
+                <Mail className="w-5 h-5 text-slate-500" />
                 <input
                   {...register("email")}
                   type="email"
                   placeholder="name@example.com"
-                  className="grow"
+                  className="grow text-white"
                   disabled={loading}
                 />
               </label>
@@ -105,12 +102,12 @@ function TestUserSignInPage() {
                 <span className="label-text font-semibold">Password</span>
               </label>
               <label className="input input-bordered flex items-center gap-2">
-                <Lock className="w-5 h-5 text-primary" />
+                <Lock className="w-5 h-5 text-slate-500" />
                 <input
                   {...register("password")}
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="grow"
+                  className="grow text-white"
                   disabled={loading}
                 />
                 <button
@@ -137,7 +134,7 @@ function TestUserSignInPage() {
             {/* Submit */}
             <button
               type="submit"
-              className="btn btn-primary w-full"
+              className="btn w-full bg-slate-950 text-white hover:bg-slate-800"
               disabled={loading}
             >
               {loading ? (

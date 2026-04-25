@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import "@/app/globals.css";
 import { TRPCProvider } from "@/components/trpcProvider";
 export const metadata: Metadata = {
   title: "Quiz App",

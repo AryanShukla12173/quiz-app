@@ -1,10 +1,8 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import { trpc } from "@/lib/utils/trpc";
-import { createClient } from "@/lib/utils/supabase/client";
-import { useRouter } from "next/navigation";
-import { testUserDashboardNavItems } from "@/lib/constants";
-import Link from "next/link";
+import { StudentNav } from "@/components/student-nav";
+import { BarChart3, ClipboardList, Medal } from "lucide-react";
 interface AttemptedTest {
   testId: string;
   testTitle: string;
@@ -24,10 +22,17 @@ function AnalyticsPage() {
   const [selectedTestId, setSelectedTestId] = React.useState<string | null>(
     null
   );
-  const supabase = createClient();
-  const [name, setName] = useState<string>("");
-  const [initials, setInitials] = useState<string>("");
-  const router = useRouter();
+  const { data: profile } = trpc.getMyTestUserProfile.useQuery();
+  const name = (profile?.fullName as string | undefined) ?? "";
+  const initials = useMemo(
+    () =>
+      name
+        .split(" ")
+        .filter(Boolean)
+        .map((el) => el[0].toUpperCase())
+        .join(""),
+    [name]
+  );
   const {
     data: attemptedTests,
     isLoading: isLoadingTests,
@@ -42,94 +47,49 @@ function AnalyticsPage() {
     { codeTestId: selectedTestId! },
     { enabled: !!selectedTestId }
   );
-  const fetchUserInitials = async () => {
-    const { data, error } = await supabase
-      .from("test_user_profile")
-      .select("FullName")
-      .single();
-    if (error) {
-      console.error("Error fetching user:", error);
-      return;
-    }
-
-    if (data?.FullName) {
-      setName(data.FullName);
-      const arr = data.FullName.split(" ");
-      const computedInitials = arr
-        .map((el: string) => el[0].toUpperCase())
-        .join("");
-      setInitials(computedInitials);
-    }
-  };
-
-  useEffect(() => {
-    fetchUserInitials();
-  });
-
   return (
-    <>
-      <nav className="navbar px-15 bg-base-300">
-        <span className="navbar-start text-2xl font-bold text-primary">
-          QuizApp
-        </span>
-        <div className="navbar-end gap-3 items-center">
-          {testUserDashboardNavItems.map((item) => (
-            <Link
-              href={item.href}
-              className="flex flex-row gap-2 font-bold text-md"
-              key={item.id}
-            >
+    <div className="min-h-screen bg-slate-100">
+      <StudentNav name={name} initials={initials} />
 
-              {item.name}
-            </Link>
-          ))}
-
-          <div className="avatar avatar-placeholder">
-            <div className="bg-neutral text-neutral-content w-10 rounded-full flex items-center justify-center">
-              <span className="text-md">{initials}</span>
-            </div>
-          </div>
-
-          <span className="font-bold">{name}</span>
-          <button
-            className="btn btn-primary rounded-2xl"
-            onClick={() => {
-              supabase.auth.signOut();
-              router.replace("/");
-            }}
-          >
-            Sign Out
-          </button>
-        </div>
-      </nav>
-
-      <div className="min-h-screen bg-base-200 font-sans text-base-content">
+      <div className="font-sans text-base-content">
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-          <header className="mb-8">
-            <h1 className="text-4xl font-bold text-primary tracking-tight">
-              My Test Analytics
+          <header className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-3 flex items-center gap-2 text-slate-900">
+              <BarChart3 className="h-5 w-5" />
+              <span className="text-sm font-semibold uppercase">
+                Analytics
+              </span>
+            </div>
+            <h1 className="text-3xl font-semibold text-slate-950 md:text-4xl">
+              My Test Performance
             </h1>
-            <p className="text-lg text-secondary mt-1">
-              Review your performance and see how you stack up.
+            <p className="mt-2 max-w-2xl text-base text-slate-600">
+              Select an attempted test to compare your score with the
+              leaderboard.
             </p>
           </header>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Column 1: Attempted Tests */}
             <div className="lg:col-span-1">
-              <h2 className="text-2xl font-semibold mb-4 pb-2 border-b border-base-content/20">
-                Attempted Tests
-              </h2>
+              <div className="mb-4 flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-slate-900" />
+                <h2 className="text-xl font-semibold text-slate-950">Attempted Tests</h2>
+              </div>
               {isLoadingTests && <LoadingSpinner />}
               {testsError && <ErrorMessage message={testsError.message} />}
               {attemptedTests && (
                 <div className="space-y-3">
                   {attemptedTests.length === 0 && !isLoadingTests ? (
-                    <div className="alert alert-info shadow-lg">
-                      You haven &apos;t attempted any tests yet.
+                    <div className="rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+                      <ClipboardList className="mx-auto mb-3 h-8 w-8 text-slate-400" />
+                      <p className="font-semibold text-slate-950">No attempts yet</p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Completed tests will appear here.
+                      </p>
                     </div>
                   ) : (
-                    (attemptedTests as AttemptedTest[]).map((test) => (
+                    (attemptedTests as unknown as AttemptedTest[]).map((test) => (
                       <TestCard
                         key={test.testId}
                         test={test}
@@ -144,14 +104,16 @@ function AnalyticsPage() {
 
             {/* Column 2: Leaderboard */}
             <div className="lg:col-span-2">
-              <h2 className="text-2xl font-semibold mb-4 pb-2 border-b border-base-content/20">
-                Leaderboard
-              </h2>
-              <div className="p-6 rounded-xl shadow-md min-h-[300px] flex flex-col  bg-base-100">
+              <div className="mb-4 flex items-center gap-2">
+                <Medal className="h-5 w-5 text-slate-900" />
+                <h2 className="text-xl font-semibold text-slate-950">Leaderboard</h2>
+              </div>
+              <div className="flex min-h-[320px] flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 {!selectedTestId && (
-                  <p className="text-center text-base-content/50">
-                    Select a test to view its leaderboard.
-                  </p>
+                  <div className="m-auto text-center text-slate-500">
+                    <Medal className="mx-auto mb-3 h-10 w-10 opacity-40" />
+                    <p className="font-medium">Select a test to view rankings.</p>
+                  </div>
                 )}
                 {isLoadingLeaderboard && <LoadingSpinner />}
                 {leaderboardError && (
@@ -159,7 +121,7 @@ function AnalyticsPage() {
                 )}
                 {leaderboard && selectedTestId && (
                   <LeaderboardTable
-                    leaderboardData={leaderboard as LeaderboardEntry[]}
+                    leaderboardData={leaderboard as unknown as LeaderboardEntry[]}
                   />
                 )}
               </div>
@@ -167,7 +129,7 @@ function AnalyticsPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -182,23 +144,23 @@ const TestCard = ({
 }) => (
   <button
     onClick={onSelect}
-    className={`w-full text-left p-4 rounded-lg border transition-all duration-200 ${
+    className={`w-full rounded-lg border p-4 text-left transition-all duration-200 ${
       isSelected
-        ? "bg-primary text-primary-content shadow-lg ring-2 ring-primary/40"
-        : "bg-base-100 hover:bg-base-200 hover:shadow-md border-base-content/20"
+        ? "bg-slate-950 text-white shadow-lg ring-2 ring-slate-300"
+        : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50 hover:shadow-md"
     }`}
   >
     <h3 className="font-bold text-lg">{test.testTitle}</h3>
     <p
-      className={`text-sm mt-1 ${
-        isSelected ? "text-primary-content/90" : "text-base-content/70"
+      className={`mt-1 text-sm ${
+        isSelected ? "text-slate-200" : "text-slate-600"
       }`}
     >
       Your Score: <span className="font-semibold">{test.totalScore}</span>
     </p>
     <p
-      className={`text-xs mt-2 ${
-        isSelected ? "text-primary-content/70" : "text-base-content/50"
+      className={`mt-2 text-xs ${
+        isSelected ? "text-slate-300" : "text-slate-500"
       }`}
     >
       Submitted on: {new Date(test.lastSubmittedAt).toLocaleDateString()}
@@ -221,25 +183,25 @@ const LeaderboardTable = ({
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-base-content/20">
-        <thead className="bg-base-200">
+        <thead className="bg-slate-50">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-base-content uppercase">
               Rank
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-base-content uppercase">
               Name
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-base-content uppercase">
               Enrollment ID
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-base-content uppercase">
               Total Score
             </th>
           </tr>
         </thead>
         <tbody className="bg-base-100 divide-y divide-base-content/20">
           {leaderboardData.map((entry) => (
-            <tr key={entry.userId} className="hover:bg-base-200">
+            <tr key={entry.userId} className="hover:bg-slate-50">
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                 {entry.rank}
               </td>
@@ -249,7 +211,7 @@ const LeaderboardTable = ({
               <td className="px-6 py-4 whitespace-nowrap text-sm text-base-content">
                 {entry.enrollmentId}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-primary">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-950">
                 {entry.totalScore}
               </td>
             </tr>

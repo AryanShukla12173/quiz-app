@@ -4,12 +4,12 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { signUpSchema } from "@/lib/schemas/formschemas";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createClient } from "@/lib/utils/supabase/client";
 import { trpc } from "@/lib/utils/trpc";
 import z from "zod";
 import { roleEnum } from "@/lib/schemas/data_schemas";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import { setAuthSession } from "@/lib/auth/session";
 
 import {
   Form,
@@ -24,9 +24,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 function AdminSignUpForm() {
-  const supabaseClient = createClient();
+  const registerAuth = trpc.register.useMutation();
   const addProfile = trpc.createProfile.useMutation();
-  const { isPending } = addProfile;
+  const isPending = registerAuth.isPending || addProfile.isPending;
   const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -45,47 +45,32 @@ function AdminSignUpForm() {
   async function onsubmit(formData: z.infer<typeof signUpSchema>) {
     try {
       const { email, password } = formData;
-      const { data, error } = await supabaseClient.auth.signUp({
+      const data = await registerAuth.mutateAsync({
         email,
         password,
+        role: roleEnum.enum.test_admin,
       });
 
-      if (data) {
-        console.log("User creation successful:", data.user);
+      setAuthSession(data.token);
+      await addProfile.mutateAsync({
+        department: formData.department,
+        designation: formData.designation,
+        full_name: formData.full_name,
+        role: roleEnum.enum.test_admin,
+      });
 
-        if (data.user?.id) {
-          addProfile.mutate(
-            {
-              department: formData.department,
-              designation: formData.designation,
-              full_name: formData.full_name,
-              role: roleEnum.enum.test_admin,
-            },
-            {
-              onSuccess: () => {
-                router.replace("/test-admin-dashboard");
-              },
-              onError: () => {
-                console.log("Problems in mutation query");
-              },
-            }
-          );
-        }
-      } else {
-        console.log("User creation unsuccessful:", error);
-        return;
-      }
+      router.replace("/test-admin-dashboard");
     } catch (error) {
       console.log(error);
     }
   }
 
   return (
-    <div className="min-h-screen bg-base-200 flex items-center justify-center p-4">
-      <Card className="w-full max-w-5xl shadow-xl">
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
+      <Card className="w-full max-w-5xl overflow-hidden border-slate-200 shadow-xl">
         <div className="grid md:grid-cols-2">
           {/* Left Panel */}
-          <div className="bg-gradient-to-br from-primary to-secondary text-white p-8 flex flex-col justify-center items-center rounded-tl-xl rounded-bl-xl">
+          <div className="flex flex-col items-center justify-center bg-slate-950 p-8 text-white">
             <h1 className="text-3xl font-bold mb-4">Welcome!</h1>
             <p className="text-lg text-center">
               Join the Test Creation platform. Signing up takes less than a
@@ -96,7 +81,7 @@ function AdminSignUpForm() {
           {/* Right Panel */}
           <div className="p-8">
             <CardHeader className="p-0 mb-4">
-              <CardTitle className="text-2xl font-bold text-center text-primary">
+              <CardTitle className="text-center text-2xl font-semibold text-slate-950">
                 Admin Sign Up
               </CardTitle>
             </CardHeader>
@@ -155,7 +140,7 @@ function AdminSignUpForm() {
                           <Input
                             placeholder="Professor, Student, etc."
                             {...field}
-                            className="h-12"
+                            className="h-12 "
                           />
                         </FormControl>
                         <FormMessage />
@@ -217,7 +202,11 @@ function AdminSignUpForm() {
                   />
 
                   {/* Submit */}
-                  <Button type="submit" className="w-full" disabled={isPending}>
+                  <Button
+                    type="submit"
+                    className="w-full bg-slate-950 text-white hover:bg-slate-800"
+                    disabled={isPending}
+                  >
                     {isPending ? "Creating..." : "Sign Up"}
                   </Button>
                 </form>

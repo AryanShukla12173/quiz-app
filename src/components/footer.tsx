@@ -1,35 +1,22 @@
 import React from "react";
-import { Github, Twitter, Facebook, Instagram } from "lucide-react";
 function Footer() {
   return (
-    <footer className="footer sm:footer-horizontal bg-base-300 text-base-content p-10">
+    <footer className="footer border-t border-slate-200 bg-white p-10 text-slate-700 sm:footer-horizontal">
       <nav>
-        <h6 className="footer-title">Services</h6>
-        <a className="link link-hover">Branding</a>
-        <a className="link link-hover">Design</a>
-        <a className="link link-hover">Marketing</a>
-        <a className="link link-hover">Advertisement</a>
+        <h6 className="footer-title text-slate-950">QuizApp</h6>
+        <p className="max-w-sm text-sm text-slate-500">
+          A focused coding test platform for admins and students.
+        </p>
       </nav>
       <nav>
-        <h6 className="footer-title">Company</h6>
-        <a className="link link-hover">About us</a>
-        <a className="link link-hover">Contact</a>
-        <a className="link link-hover">Jobs</a>
-        <a className="link link-hover">Press kit</a>
+        <h6 className="footer-title">Admin</h6>
+        <a href="/sign-in" className="link link-hover">Sign In</a>
+        <a href="/sign-up" className="link link-hover">Create Account</a>
       </nav>
       <nav>
-        <h6 className="footer-title">Social</h6>
-        <div className="grid grid-flow-col gap-4">
-          {[Twitter, Facebook, Instagram, Github].map((Icon, i) => (
-            <a
-              key={i}
-              href="#"
-              className="text-base-content/60 hover:text-primary"
-            >
-              <Icon className="w-5 h-5" />
-            </a>
-          ))}
-        </div>
+        <h6 className="footer-title">Student</h6>
+        <a href="/test-user-sign-in" className="link link-hover">Sign In</a>
+        <a href="/test-user-sign-up" className="link link-hover">Create Account</a>
       </nav>
     </footer>
   );

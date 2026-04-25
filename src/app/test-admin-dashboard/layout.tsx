@@ -2,28 +2,33 @@ import type { Metadata } from "next";
 import "@/app/globals.css";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { RoleGuard } from "@/components/role-guard";
+import { getCurrentUser } from "@/server/auth/session";
+import { redirect } from "next/navigation";
+
 export const metadata: Metadata = {
   title: "Quiz App",
   description: "Website for creating tests and administering them to users",
 };
-import { createClient } from "@/lib/utils/supabase/server";
-import { redirect } from "next/navigation";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createClient();
-  const { error } = await supabase.auth.getUser();
-  if (error) {
-    console.log(error);
+  const user = await getCurrentUser();
+
+  if (!user || (user.role !== "test_admin" && user.role !== "admin")) {
     redirect("/");
   }
+
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarTrigger />
-      {children}
-    </SidebarProvider>
+    <RoleGuard allowedRoles={["admin", "test_admin"]}>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarTrigger />
+        {children}
+      </SidebarProvider>
+    </RoleGuard>
   );
 }

@@ -44,20 +44,20 @@ const features = [
 ];
 export default function Features() {
   return (
-    <section id="features" className="py-20 bg-base-100">
+    <section id="features" className="bg-white py-20">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16 max-w-3xl mx-auto">
           <div className="mb-4">
             <div className="inline-block">
-              <div className="badge badge-accent badge-lg py-3 px-4 text-white">
+              <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
                 Powerful Features
               </div>
             </div>
           </div>
-          <h2 className="text-4xl font-bold mb-4 text-primary">
+          <h2 className="text-4xl font-semibold mb-4 text-slate-950">
             Everything You Need
           </h2>
-          <p className="text-lg text-base-content/70">
+          <p className="text-lg text-slate-600">
             Discover all the tools you need to create engaging quizzes and
             enhance your learning experience.
           </p>
@@ -67,17 +67,15 @@ export default function Features() {
           {features.map((feature, index) => (
             <div
               key={index}
-              className="card bg-base-200 border border-base-300 shadow-sm hover:shadow-md transition-all group"
+              className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
             >
-              <div className="card-body">
-                <div className="bg-primary/10 text-primary p-3 rounded-lg inline-block mb-4 group-hover:bg-primary/20 transition">
+                <div className="mb-4 inline-flex rounded-lg bg-slate-100 p-3 text-slate-800 transition">
                   {feature.icon}
                 </div>
-                <h3 className="card-title group-hover:text-primary">
+                <h3 className="text-lg font-semibold text-slate-950">
                   {feature.title}
                 </h3>
-                <p className="text-base-content/70">{feature.description}</p>
-              </div>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{feature.description}</p>
             </div>
           ))}
         </div>

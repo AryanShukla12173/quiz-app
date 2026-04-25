@@ -4,21 +4,23 @@ import { testStore } from "@/store/testEditorStore";
 function TestTab() {
   const output =  testStore((state)=>state.output)
   return (
-    <div className="flex flex-col gap-3">
-      <div className="w-full border-b ">
-        <span className="font-bold text-xs ml-3">STDIN</span>
+    <div className="grid h-full gap-4 p-4 md:grid-cols-2">
+      <div className="w-full">
+        <span className="text-sm font-semibold text-white">Custom Input</span>
         <textarea
-          className="h-[20vh] w-full font-light p-3 resize-none"
-          placeholder={"Input for the program(optional)"}
+          className="textarea textarea-bordered mt-2 h-[190px] w-full resize-none border-slate-200 bg-base-100 font-mono text-sm text-white"
+          placeholder={"Input for the program"}
         onChange={(e)=>testStore.setState({stdin : e.target.value})}
         />
       </div>
-      <div className="flex flex-col p-3 gap-2">
-        <span>Output</span>
-        <div>{output}</div>
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-semibold text-white">Output</span>
+        <pre className="h-[190px] overflow-auto rounded-lg border border-slate-200 bg-slate-950 p-3 font-mono text-sm text-slate-100">
+          {output || "Run your code to see output here."}
+        </pre>
       </div>
     </div>
   );
-}
+} 
 
 export default TestTab;

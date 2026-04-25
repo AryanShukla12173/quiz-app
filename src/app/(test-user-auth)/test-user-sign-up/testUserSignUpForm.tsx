@@ -16,8 +16,8 @@ import {
 } from "lucide-react";
 const yearOptions = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 import { trpc } from "@/lib/utils/trpc";
-import { createClient } from "@/lib/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import { setAuthSession } from "@/lib/auth/session";
 
 function TestUserSignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -25,6 +25,7 @@ function TestUserSignUpPage() {
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
   const router = useRouter();
+  const registerAuth = trpc.register.useMutation();
   const addTestUserProfile = trpc.createTestUserProfile.useMutation();
 
   const {
@@ -35,56 +36,41 @@ function TestUserSignUpPage() {
     resolver: zodResolver(testUserSignUpSchema),
   });
 
-  const supabaseClient = createClient();
-
   const onSubmit = async (formData: z.infer<typeof testUserSignUpSchema>) => {
     setFormError(null);
     setFormSuccess(null);
 
     try {
       const { email, password } = formData;
-      const { data, error } = await supabaseClient.auth.signUp({
+      const data = await registerAuth.mutateAsync({
         email,
         password,
+        role: "test_user",
       });
 
-      if (error) {
-        setFormError(error.message);
-        return;
-      }
+      setAuthSession(data.token);
+      await addTestUserProfile.mutateAsync({
+        branch: formData.branch,
+        enrollmentId: formData.enrollmentId,
+        fullName: formData.fullName,
+        year: formData.year,
+        role: "test_user",
+      });
 
-      if (data.user?.id) {
-        addTestUserProfile.mutate(
-          {
-            branch: formData.branch,
-            enrollmentId: formData.enrollmentId,
-            fullName: formData.fullName,
-            year: formData.year,
-            role: "test_user",
-          },
-          {
-            onSuccess: () => {
-              setFormSuccess("Account created successfully! Redirecting...");
-              setTimeout(() => {
-                router.replace("/test-user-dashboard");
-              }, 1500);
-            },
-            onError: (err) => {
-              setFormError("Error saving profile: " + err.message);
-            },
-          }
-        );
-      }
+      setFormSuccess("Account created successfully! Redirecting...");
+      setTimeout(() => {
+        router.replace("/test-user-dashboard");
+      }, 1500);
     } catch (err) {
-      setFormError("Unexpected error: " + err);
+      setFormError(err instanceof Error ? err.message : "Unexpected error during sign up.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200 px-4 py-10 font-sans">
-      <div className="card w-full max-w-5xl bg-base-100 shadow-xl overflow-hidden flex flex-col md:flex-row">
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10 font-sans">
+      <div className="flex w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl md:flex-row">
         {/* Left Panel */}
-        <div className="md:w-1/2 bg-primary p-10 text-white flex items-center justify-center text-center">
+        <div className="flex items-center justify-center bg-slate-950 p-10 text-center text-white md:w-1/2">
           <div>
             <h1 className="text-3xl font-bold mb-4">Test User Sign Up</h1>
             <p className="text-lg">
@@ -96,7 +82,7 @@ function TestUserSignUpPage() {
         {/* Right Panel - Form */}
         <div className="md:w-1/2 p-6 sm:p-8 overflow-y-auto max-h-[90vh]">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <h2 className="text-2xl font-bold text-primary text-center">
+            <h2 className="text-center text-2xl font-semibold text-slate-950">
               Register
             </h2>
 
@@ -120,7 +106,7 @@ function TestUserSignUpPage() {
               </label>
               <div className="join w-full">
                 <span className="join-item px-3 bg-base-200 flex items-center">
-                  <User className="w-5 h-5 text-primary" />
+                  <User className="w-5 h-5 text-slate-500" />
                 </span>
                 <input
                   {...register("fullName")}
@@ -142,7 +128,7 @@ function TestUserSignUpPage() {
               </label>
               <div className="join w-full">
                 <span className="join-item px-3 bg-base-200 flex items-center">
-                  <MailIcon className="w-5 h-5 text-primary" />
+                  <MailIcon className="w-5 h-5 text-slate-500" />
                 </span>
                 <input
                   {...register("email")}
@@ -165,7 +151,7 @@ function TestUserSignUpPage() {
               </label>
               <div className="join w-full">
                 <span className="join-item px-3 bg-base-200 flex items-center">
-                  <IdCardIcon className="w-5 h-5 text-primary" />
+                  <IdCardIcon className="w-5 h-5 text-slate-500" />
                 </span>
                 <input
                   {...register("enrollmentId")}
@@ -187,7 +173,7 @@ function TestUserSignUpPage() {
               </label>
               <div className="join w-full">
                 <span className="join-item px-3 bg-base-200 flex items-center">
-                  <BookOpen className="w-5 h-5 text-primary" />
+                  <BookOpen className="w-5 h-5 text-slate-500" />
                 </span>
                 <input
                   {...register("branch")}
@@ -231,7 +217,7 @@ function TestUserSignUpPage() {
               </label>
               <div className="join w-full">
                 <span className="join-item px-3 bg-base-200 flex items-center">
-                  <Lock className="w-5 h-5 text-primary" />
+                  <Lock className="w-5 h-5 text-slate-500" />
                 </span>
                 <input
                   type={showPassword ? "text" : "password"}
@@ -261,11 +247,13 @@ function TestUserSignUpPage() {
 
             {/* Submit */}
             <button
-              className="btn btn-primary w-full text-lg"
+              className="btn w-full bg-slate-950 text-lg text-white hover:bg-slate-800"
               type="submit"
-              disabled={addTestUserProfile.isPending}
+              disabled={registerAuth.isPending || addTestUserProfile.isPending}
             >
-              {addTestUserProfile.isPending ? "Creating..." : "Sign Up"}
+              {registerAuth.isPending || addTestUserProfile.isPending
+                ? "Creating..."
+                : "Sign Up"}
             </button>
           </form>
         </div>
